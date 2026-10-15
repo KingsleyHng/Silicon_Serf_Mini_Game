@@ -1,0 +1,12 @@
+{
+  "key": "cafe",
+  "title": "開店前半小時",
+  "description": "一間小咖啡店開門前的三十分鐘：開咖啡機、調磨豆機、開門迎接第一位客人。fab24hr 框架的 5 分鐘範例遊戲。",
+  "lang": "zh-Hant",
+  "src": [
+    "data.js",
+    "cafe.js",
+    "story.js"
+  ],
+  "css": "game.css"
+}

@@ -1,0 +1,77 @@
+<canvas id="scene" tabindex="-1" aria-label="3D 場景"></canvas>
+
+<header class="hud" id="hud">
+  <div class="clockbox" title="遊戲裡現在的時間"><span class="clock mono" id="clock" aria-label="現在時間">00:00</span><span class="clock-note" id="clockNote"></span></div>
+  <div class="meters">
+    <button class="btn btn-ghost snd" id="sndBtn" type="button" aria-pressed="true"></button><button class="btn btn-ghost" id="homeBtn" type="button">主頁</button><button class="btn btn-ghost" id="openCodex" type="button">圖鑑</button>
+  </div>
+</header>
+
+<div class="guide" id="guide" role="status" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="ptr" id="ptr" aria-hidden="true" hidden>➜</div>
+<div class="bub" id="bub" aria-hidden="true" hidden></div>
+
+<section class="panel" id="panel" hidden>
+  <div class="rc"><b id="pTitle"></b><button id="pClose" type="button">關閉</button></div>
+  <div class="panel-body" id="panelBody"></div>
+</section>
+
+<div class="dlg" id="dlg" aria-live="polite" hidden></div>
+<div class="tcard" id="tcard" hidden></div>
+
+<div class="codex" id="codex" hidden>
+  <div class="codex-in" role="dialog" aria-modal="true" aria-labelledby="codexTitle">
+    <div class="codex-top"><h2 id="codexTitle">圖鑑</h2><div class="langsw" id="cLang" role="group" aria-label="語言" hidden></div><button class="btn btn-ghost" id="closeCodex" type="button">關閉</button></div>
+    <div class="tabs" id="codexTabs" role="tablist"></div>
+    <div class="codex-body" id="codexBody"></div>
+  </div>
+</div>
+
+<div class="sys" id="sys" hidden>
+  <div class="sys-win" role="dialog" aria-modal="true" aria-labelledby="sysTitle">
+    <div class="sys-bar"><span class="sys-logo mono" id="sysLogo"></span><b id="sysTitle"></b><button class="btn btn-ghost" id="sysClose" type="button">關閉</button></div>
+    <div class="sys-body" id="sysBody"></div>
+  </div>
+</div>
+
+<div class="dpad" id="dpad" role="group" aria-label="走動" hidden>
+  <button type="button" data-k="u" aria-label="往上走">▲</button><button type="button" data-k="l" aria-label="往左走">◀</button><button type="button" data-k="r" aria-label="往右走">▶</button><button type="button" data-k="d" aria-label="往下走">▼</button>
+</div>
+<button class="talk-btn" id="talkBtn" type="button" hidden></button>
+
+<div class="cardv" id="cardv" hidden>
+  <div class="cardv-win" role="dialog" aria-modal="true" aria-labelledby="cardvT">
+    <div class="cardv-bar"><b id="cardvT">圖卡</b><button class="btn btn-ghost" id="cardvClose" type="button">關閉</button></div>
+    <div class="cardv-body"><img id="cardImg" alt="圖卡"><p id="cardTip" aria-live="polite"></p></div>
+    <div class="cardv-foot"><a class="btn btn-primary" id="cardDl" download="card.jpg">存圖</a></div>
+  </div>
+</div>
+<div class="fin" id="end" hidden>
+  <div class="board" role="dialog" aria-modal="true" aria-label="結算">
+    <div class="scroll" id="endBody"></div>
+    <div class="foot">
+      <div class="go"><button class="btn btn-primary" id="endLink" type="button">分享連結</button><button class="btn" id="endRep" type="button">看結案報告</button><button class="btn" id="endAgain" type="button">再玩一次</button><button class="btn" id="endCopy" type="button">複製結算</button><button class="btn" id="endHome" type="button">主頁</button></div>
+      <p class="links"><a class="bmc" id="endSupport" href="#" target="_blank" rel="noopener" hidden></a><span class="credit"><a class="lnk" id="endCredit" href="#" target="_blank" rel="noopener" lang="en">Powered by fab24hr</a><a class="lnk" id="endCoffee" href="#" target="_blank" rel="noopener">☕ 贊助 fab24hr</a></span></p>
+    </div>
+  </div>
+</div>
+
+<div class="home" id="home">
+  <main class="board" id="board">
+    <div class="scroll">
+      <div class="b-head"><h1 class="b-title" id="hTitle"></h1><div class="langsw" id="hLang" role="group" aria-label="語言" hidden></div></div>
+      <p class="b-sub" id="hSub"></p>
+      <fieldset><legend>你的名字</legend>
+        <label class="vh" for="pname">你的名字</label>
+        <input class="tin" id="pname" type="text" maxlength="12" autocomplete="off" placeholder="可以不填">
+      </fieldset>
+    </div>
+    <div class="foot">
+      <div class="go"><button class="btn btn-primary" id="go" type="button">開始</button><button class="btn" id="goNew" type="button" hidden>從頭開始</button></div>
+      <p class="keys">畫面上方會告訴你下一步。跟著頭上有「！」的人走，或按「帶我去」。<span class="kb">走動：方向鍵、WASD 或點地板　對話：走近按 E</span></p>
+      <p class="links"><button class="lnk" id="hSnd" type="button"></button><a class="bmc" id="hSupport" href="#" target="_blank" rel="noopener" hidden></a><span class="credit"><a class="lnk" id="hCredit" href="#" target="_blank" rel="noopener" lang="en">Powered by fab24hr</a><a class="lnk" id="hCoffee" href="#" target="_blank" rel="noopener">☕ 贊助 fab24hr</a></span></p>
+      <p class="fine" id="hFine"></p>
+    </div>
+  </main>
+</div>
