@@ -1,11 +1,14 @@
 {
-  "key": "cafe",
-  "title": "Opening Shift",
-  "description": "Half an hour before a small café opens: switch on the machine, dial in the grinder, unlock the door. A five-minute sample game made with the fab24hr engine.",
+  "key": "siliconserf",
+  "title": "Silicon Serf",
+  "description": "Your first two weeks as a chip front-end engineer at KT Silicon Labs: read the spec, type real Verilog, write assertions, hunt latches, write timing constraints and fix setup and hold violations.",
   "lang": "en",
   "src": [
     "data.js",
-    "cafe.js",
+    "logo.js",
+    "office.js",
+    "check.js",
+    "minis.js",
     "story.js"
   ],
   "css": "game.css"

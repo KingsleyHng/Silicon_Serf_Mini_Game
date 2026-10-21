@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* 自動試玩：從主頁一路玩到結算卡，兩種玩家各一次。先跑 npm run build。
-     node tools/test.js            電腦（1280×800、亮色、選第一個選項、把咖啡磨對）＋手機（390×844、暗色、選最後一個選項、不調磨豆機）
+     node tools/test.js            電腦（1280×800、亮色、選第一個選項、打字題打對）＋電腦暗色（1440×900、選最後一個選項、打字題打錯三次再看答案）；這個遊戲只做電腦版
    每一輪最後要印 ended: true、card: true（分享圖卡畫出來了）；整份最後一行 TEST OK 或 TEST FAILED。截圖在 out/shot-*.png（-end 是圖卡、-recap 是結案報告）。
    用到 playwright-core 與一個 Chromium 系的瀏覽器，依序找：環境變數 CHROMIUM 指到的執行檔（或 PLAYWRIGHT_BROWSERS_PATH 底下的 chromium）、
    npx playwright-core install chromium 裝的那一個、電腦上已經裝好的瀏覽器（channel）。都找不到就印出要跑哪一行指令，不丟一大段錯誤。
@@ -24,6 +24,20 @@ const creditLine = (pg, pre) => pg.evaluate(([pre, want]) => want.map(([id, url]
   if (parseFloat(getComputedStyle(e).fontSize) < 11) return pre + id + ' text too small';
   return e.href === url ? '' : pre + id + ' points to ' + e.href;
 }).filter(Boolean), [pre, CREDIT]);
+/* 打字題的正確答案（game/minis.js 的 codeTask，依 data-task）：故意跟標準答案寫得不一樣，順便測「等價就算對」 */
+const ANSWERS = {
+  ctrl: 'ctrl[7:0] <= PSTRB[0] ? PWDATA[7:0] : ctrl[7:0];',
+  irq: 'irq_set | irq_reg & ~clr',
+  slverr: 'PSEL && PENABLE && ((PADDR != 0 && PADDR != 4 && PADDR != 8) || (PWRITE && PADDR == 4))',
+  assert: "assert property (@(posedge PCLK) PSEL && PENABLE && !PWRITE && PADDR == 8'h04 |-> PRDATA == status);",
+  cover: 'PSEL && PENABLE && PWRITE && PADDR == 8 && PSTRB[0] && (PWDATA[3:0] & irq_set) != 0',
+  flops: '36',
+  nolatch: 'rd_status ? status : rd_ctrl ? ctrl : 0',
+  clock: 'create_clock -name PCLK -period 5.0 [get_ports {PCLK}]',
+  indelay: 'set_input_delay 2 -clock PCLK [get_ports PADDR]',
+  setup: '-0.40',
+  hold: '-0.14 ns'
+};
 const creditErr = (where, bad) => 'credit line on the ' + where + ' screen (required by LICENSE) ／ 出處那一行（授權的條件）：' + bad.join(', ');
 
 async function play(br, o) {
@@ -41,7 +55,7 @@ async function play(br, o) {
   /* 看得到：有畫出來的方框（畫面上的東西多半是 position:fixed，offsetParent 永遠是 null，不能用它判斷） */
   const vis = s => pg.evaluate(s => { const e = document.querySelector(s); return !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden' }, s);
   const click = async s => { try { await pg.click(s, { timeout: 5000 }); return true } catch (e) { log.push('miss:' + s); return false } };
-  while (steps++ < 400) {
+  while (steps++ < 1500) {
     if (await vis('#end')) { ended = true; break }
     if (await vis('#tcard')) { await click('#tcGo'); log.push('card'); await pg.waitForTimeout(350); continue }   /* 字卡淡出的 240 毫秒還看得到、但按不到 */
     if (await vis('#toastGo')) { await click('#toastGo'); log.push('answer'); continue }
@@ -51,6 +65,17 @@ async function play(br, o) {
       if (want != null && g !== want) { await click(g > want ? '#finer' : '#coarser'); continue }
       if (await vis('#next')) { await click('#next'); log.push('mini:' + g); continue }
       await click('#pull'); continue;
+    }
+    if (await vis('#codeIn')) {   /* 打字題：第一輪打正確答案（故意用跟標準答案不同的寫法）；第二輪打錯三次，再按「看答案」 */
+      if (await vis('#next')) { await click('#next'); log.push('next'); continue }
+      const task = await pg.getAttribute('.task', 'data-task');
+      if (!o.last) { await pg.fill('#codeIn', ANSWERS[task] || ''); await click('#run'); log.push('code:' + task); await pg.waitForTimeout(100); if (!(await vis('#next'))) { errors.push('typed answer for ' + task + ' was not accepted: ' + (await pg.textContent('#fb')).slice(0, 160)); break } continue }
+      if (await vis('#reveal')) { await click('#reveal'); log.push('reveal:' + task); continue }
+      await pg.fill('#codeIn', await pg.getAttribute('.task', 'data-wrong')); await click('#run'); continue;
+    }
+    if (await vis('#panel .qz')) {   /* 小測驗：每一題還沒選的，第一輪選第一個答案、第二輪選最後一個 */
+      const picked = await pg.evaluate(last => { const g = Array.from(document.querySelectorAll('#panel .qz')).find(q => !q.querySelector('.opt.on') && q.querySelector('.opt:not([disabled])')); if (!g) return false; const os = g.querySelectorAll('.opt'); os[last ? os.length - 1 : 0].click(); return true }, !!o.last);
+      if (picked) { log.push('opt'); continue }
     }
     if (await vis('#panel') && await vis('#next')) { await click('#next'); log.push('next'); continue }   /* 其他小遊戲：最後一顆是 #next */
     if (await vis('#dlg')) {
@@ -93,7 +118,7 @@ async function browser() {
   if (CREDIT.some(c => !c[1])) { console.error('engine/home.js must define CREDIT_URL and COFFEE_URL ／ engine/home.js 要有 CREDIT_URL 與 COFFEE_URL'); console.log('TEST FAILED'); process.exit(1) }
   const br = await browser();
   const a = await play(br, { id: 'desktop', vp: { width: 1280, height: 800 }, scheme: 'light', name: 'Alex', dial: true });
-  const b = await play(br, { id: 'phone', vp: { width: 390, height: 844 }, scheme: 'dark', name: '', touch: true, last: true });
+  const b = await play(br, { id: 'dark', vp: { width: 1440, height: 900 }, scheme: 'dark', name: '', last: true });
   await br.close();
   console.log(a && b ? 'TEST OK' : 'TEST FAILED');
   process.exit(a && b ? 0 : 1);

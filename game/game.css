@@ -1,4 +1,52 @@
-/* Opening Shift: warmer colours than the engine's default (light and dark). */
-:root{--brand:#9a4a1c;--brand-edge:#6e3211;--accent:#e0a040;--accent-edge:#b07a22;--accent-tint:#fbefd9}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--brand:#c8642c;--brand-edge:#e8925c;--accent:#e8b050;--accent-edge:#f2c878;--accent-tint:#3a2a12}}
-:root[data-theme="dark"]{--brand:#c8642c;--brand-edge:#e8925c;--accent:#e8b050;--accent-edge:#f2c878;--accent-tint:#3a2a12}
+/* Silicon Serf: cool silicon blues and a solder-green accent (light and dark). */
+:root{--brand:#1f5f8b;--brand-edge:#143f5e;--accent:#3fae6a;--accent-edge:#2b7f4c;--accent-tint:#e2f4e8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--brand:#3b86bd;--brand-edge:#6fb0e0;--accent:#4cc47c;--accent-edge:#7fdca2;--accent-tint:#163323}}
+:root[data-theme="dark"]{--brand:#3b86bd;--brand-edge:#6fb0e0;--accent:#4cc47c;--accent-edge:#7fdca2;--accent-tint:#163323}
+
+/* Mini-games: waveform tables, code snippets and answer buttons */
+.wave{border-collapse:collapse;font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.wave th,.wave td{border:1px solid var(--line);padding:4px 8px;text-align:center}
+.wave th{font-weight:600;text-align:left;color:var(--muted)}
+.wave td.hi{background:var(--accent-tint);font-weight:700}
+.wave-wrap{overflow-x:auto;max-width:100%}
+.code{font-family:var(--font-mono);font-size:12.5px;line-height:1.5;white-space:pre;overflow-x:auto;margin:0;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px}
+.qz{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.qz+.qz{border-top:1px solid var(--line);padding-top:12px}
+.qz .opt{text-align:left}
+.qz .opt.code{white-space:pre-wrap;overflow-wrap:anywhere;min-height:44px}
+.qz .opt.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.qz .opt.ok{border-color:var(--accent);background:var(--accent-tint)}
+.qz .opt.bad{border-color:#c0392b}
+.qz .why{margin:0}
+
+/* Typing tasks: a wider panel, the code around the blank, signal chips, and the answer editor.
+   The editor is a coloured <pre> under a see-through <textarea> in the same grid cell, so both wrap the same way. */
+@media (min-width:860px){.panel:has(.task){width:min(820px,calc(100vw - 32px))}}
+.code .blank{color:var(--accent-edge);font-weight:700}
+.code.ed-ctx{font-size:15px;line-height:1.6;padding:12px 16px;background:#0e1a22;color:#e6edf3;border-color:#23394a;border-radius:8px;white-space:pre-wrap}
+.code.ed-ctx .blank{color:#4cc47c}
+.sigs{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.sig{font-family:var(--font-mono);font-size:13.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.sig small{color:var(--muted);margin-left:2px;font-size:12px}
+.sig:hover:not(:disabled){border-color:var(--brand)}
+.sig:disabled{opacity:.5;cursor:default}
+.ed{border:1px solid #23394a;border-radius:8px;overflow:hidden;background:#0e1a22;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.ed:focus-within{border-color:#3b86bd;box-shadow:0 0 0 2px rgba(59,134,189,.35)}
+.ed-bar{display:flex;justify-content:space-between;gap:12px;padding:6px 14px;font-family:var(--font-mono);font-size:12px;color:#8aa0ad;background:#14242f;border-bottom:1px solid #23394a}
+.ed-box{display:grid}
+.ed-hl,.ed-in{grid-area:1/1;margin:0;padding:14px 16px;border:0;font-family:var(--font-mono);font-size:18px;line-height:1.6;font-weight:400;font-kerning:none;font-variant-ligatures:none;letter-spacing:0;tab-size:2;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;min-height:calc(4.8em + 28px);box-sizing:border-box}
+.ed-one .ed-hl,.ed-one .ed-in{min-height:0}
+.ed-hl{color:#e6edf3;pointer-events:none}
+.ed-in{background:transparent;color:transparent;caret-color:#4cc47c;resize:none;overflow:hidden;outline:none;width:100%}
+.ed-in::placeholder{color:#5d7280}
+.ed-in::selection{background:rgba(127,200,240,.3)}
+.ed-in[readonly]{cursor:default}
+.hl-kw{color:#c792ea}.hl-sig{color:#7fc8f0}.hl-num{color:#f5c26b}.hl-op{color:#ff9e64}.hl-com{color:#6b7d88;font-style:italic}
+.hl-b0{color:#ffd166}.hl-b1{color:#e17cf0}.hl-b2{color:#4fc1ff}
+.hl-bad{color:#ff6b6b;text-decoration:underline wavy #ff6b6b;text-underline-offset:3px}
+.fb p{margin:0 0 6px}
+.fb-ok{color:var(--accent-edge);font-weight:700}
+.fb-bad,.fb-err{font-weight:600}
+.fb-err{color:#b0631a}
+.wave.kv th{text-align:left}
+.wave.kv td{text-align:left;white-space:nowrap}

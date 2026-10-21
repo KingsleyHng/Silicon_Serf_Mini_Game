@@ -1,45 +1,93 @@
-/* Opening Shift: the people, the words, the places, the home screen.
-   Everything here is fictional. Change any of it to make your own game. */
+/* Silicon Serf: the people, the words, the places, the home screen.
+   KT Silicon Labs and everyone in it are fictional. */
 
 /* Home screen */
-HOME.title = 'Opening Shift';
-HOME.sub = 'Half an hour before a café opens';
-HOME.fine = 'A sample game made with the fab24hr engine. The café and everyone in it are fictional.';
-/* Your own support link (shown on the home screen and the ending card), for example:
-   HOME.support = {url: 'https://buymeacoffee.com/your-name', label: '☕ Buy me a coffee'}; */
+HOME.title = 'Silicon Serf';
+HOME.sub = 'Your first two weeks as a chip front-end engineer';
+HOME.fine = 'A story game made with the fab24hr engine. KT Silicon Labs and everyone in it are fictional.';
 HOME.support = null;
 
 /* Who is in the game.
    STORY.cast: how they appear in the dialogue box and the codex (about = codex text).
-   WORLD.cast: their body in the 3D scene (only people who are physically there; the delivery driver only phones). */
+   WORLD.cast: their body in the 3D scene (Marvin from IT only ever phones). */
 STORY.cast = {
-  me: {name: 'You', role: 'Barista, first week', tag: 'YOU', color: '#c98a00'},
-  mia: {name: 'Mia', role: 'Shift lead', tag: 'LEAD', color: '#a8327a', about: 'Runs the morning shift. Has opened this café more times than she can count, and still tastes the first shot every day.'},
-  sam: {name: 'Sam', role: 'Regular', tag: 'REG', color: '#2b6bd6', about: 'First through the door most mornings. Always orders the same thing.'},
-  drv: {name: 'Dairy delivery', role: 'On the phone', tag: 'TEL', color: '#55616b', about: 'Brings the milk every morning, usually before you arrive.'}
+  me: {name: 'You', role: 'RTL design engineer, first week', tag: 'YOU', color: '#c98a00'},
+  kln: {name: 'KLN', role: 'RTL design lead', tag: 'LEAD', color: '#1f5f8b', about: 'Leads the RTL team and reviews every line that goes into the chip. Reads Verilog the way other people read the news.'},
+  skg: {name: 'SKG', role: 'Verification engineer', tag: 'DV', color: '#2b8a57', about: 'Writes the testbenches that try to break your design. Finding your bug is the job, not a personal attack.'},
+  qyl: {name: 'QYL', role: 'Chip architect', tag: 'ARCH', color: '#7a4bb3', about: 'Wrote the spec for the peripheral block you are building. Knows why every register bit exists.'},
+  jjy: {name: 'JJY', role: 'Synthesis and timing engineer', tag: 'STA', color: '#c0621d', about: 'Turns RTL into gates and makes sure every path in the chip is fast enough, and not too fast. Speaks fluent nanoseconds.'},
+  kt: {name: 'KT', role: 'CEO', tag: 'CEO', color: '#b2382f', about: 'Founded KT Silicon Labs. Still walks the floor every week and remembers everyone\'s first block.'},
+  marvin: {name: 'Marvin', role: 'IT support, on the phone', tag: 'IT', color: '#55616b', about: 'Sets up accounts, licences and laptops. Mostly heard, rarely seen.'}
 };
 WORLD.cast = {
-  me: {label: 'You · Barista', fill: '#f2b01e', ink: '#231800', cloth: 0x3b3b3b, color: 0xc98a00, hair: 0x2b2320, node: 'start', face: Math.PI},
-  mia: {label: 'Mia · Shift lead', fill: '#a8327a', ink: '#ffffff', cloth: 0x5b4636, color: 0xa8327a, hair: 0x6b3a22, long: true, node: 'bar', face: 0},
-  sam: {label: 'Sam · Regular', fill: '#2b6bd6', ink: '#ffffff', cloth: 0x2f5f9f, color: 0x2b6bd6, hair: 0x1c1c1c, node: 'outside', face: -Math.PI / 2, hidden: true}
+  me: {label: 'You · RTL engineer', fill: '#f2b01e', ink: '#231800', cloth: 0x3b4a5a, color: 0xc98a00, hair: 0x2b2320, node: 'start', face: Math.PI},
+  kln: {label: 'KLN · RTL lead', fill: '#1f5f8b', ink: '#ffffff', cloth: 0x2d3e50, color: 0x1f5f8b, hair: 0x1c1c1c, node: 'kln', face: 0},
+  skg: {label: 'SKG · Verification', fill: '#2b8a57', ink: '#ffffff', cloth: 0x4f6b3a, color: 0x2b8a57, hair: 0x3a2618, node: 'skg', face: 0},
+  qyl: {label: 'QYL · Architect', fill: '#7a4bb3', ink: '#ffffff', cloth: 0x6b5a7a, color: 0x7a4bb3, hair: 0x14100e, long: true, node: 'qyl', face: 0},
+  jjy: {label: 'JJY · Synthesis & timing', fill: '#c0621d', ink: '#ffffff', cloth: 0x7a4a2a, color: 0xc0621d, hair: 0x241a12, node: 'jjy', face: 0},
+  kt: {label: 'KT · CEO', fill: '#b2382f', ink: '#ffffff', cloth: 0x22262b, color: 0xb2382f, hair: 0x2a2a2a, node: 'lobby', face: -Math.PI / 2}
 };
 
 /* Places you walk to (not people). at = where you stand to use it; mark = where the "!" floats. */
 STORY.places = {
-  machine: {name: 'Espresso machine', at: [-3, -4.1], mark: [-3, 2.4, -5.4], go: 'Go to the espresso machine'},
-  grinder: {name: 'Grinder', at: [-5.2, -4.1], mark: [-5.2, 2.2, -5.4], go: 'Go to the grinder'},
-  door: {name: 'Front door', at: [6.2, 3], mark: [7.7, 3.1, 3], go: 'Go to the front door'}
+  mydesk: {name: 'Your desk', at: [-2.2, 3.7], mark: [-2.2, 2.4, 2.3], go: 'Go to your desk'},
+  fpga: {name: 'FPGA bench', at: [6, -4.1], mark: [6, 2.3, -5.4], go: 'Go to the FPGA bench'},
+  pantry: {name: 'Pantry', at: [7, -0.6], mark: [8.3, 2.4, -0.6], go: 'Go to the pantry'}
 };
 
 /* Words players can tap for a plain explanation. [word, explanation]. Alternative spellings: separate with " / ". */
 const GLOSS = [
-  ['Espresso', 'Coffee made by pushing hot water through finely ground coffee under pressure. Small and strong; most café drinks start with it.'],
-  ['Shot', 'One portion of espresso, pulled one at a time.'],
-  ['Dial in / dialing in', 'Adjusting the grinder until the espresso tastes right. Beans change from day to day, so baristas do it every morning.'],
-  ['Grind size', 'How fine the coffee is ground. Finer coffee slows the water down; coarser coffee lets it rush through.'],
-  ['Extraction', 'How much flavour the water pulls out of the coffee. Too little tastes sour; too much tastes bitter.'],
-  ['Group head', 'The part of the espresso machine where the basket of coffee locks in and the hot water comes out.'],
-  ['Flat white', 'Espresso with a thin layer of steamed milk. Smaller and stronger than a latte.'],
-  ['Regular', 'A customer who comes in so often that the staff know their order.']
+  ['RTL', 'Register-transfer level: describing a chip as registers (memory that updates on a clock tick) and the logic between them. It is the code a front-end designer writes.'],
+  ['Verilog', 'A hardware description language. It looks like a programming language, but each line becomes wires and gates, and they all run at the same time.'],
+  ['Front-end', 'The half of chip design that decides what the chip does: architecture, RTL code and verification. The back-end turns that into a physical layout.'],
+  ['Spec / specification', 'The document that says exactly how a block must behave. If the code and the spec disagree, the code is wrong.'],
+  ['APB', 'Advanced Peripheral Bus: a simple, slow bus the processor uses to read and write the settings of small blocks such as timers and serial ports.'],
+  ['Requester', 'The side of a bus that starts a transfer, usually a bridge from the processor.'],
+  ['Completer', 'The side of a bus that answers a transfer. Your register block is one.'],
+  ['PSEL', 'The APB signal that says "this transfer is for you". Each block on the bus gets its own.'],
+  ['PENABLE', 'The APB signal that is 0 in the first cycle of a transfer and 1 in the second. It tells the two phases apart.'],
+  ['SETUP', 'The first cycle of an APB transfer: address and data are on the bus, but nothing happens yet.'],
+  ['ACCESS', 'The second cycle of an APB transfer. The transfer completes on the clock edge at the end of it.'],
+  ['IDLE', 'A bus cycle with no transfer for you.'],
+  ['PRDATA', 'The data your block sends back on an APB read. It must be correct during the ACCESS cycle, because that is when it is sampled.'],
+  ['PSLVERR', 'The APB error signal. A block raises it in the ACCESS cycle to say "this transfer failed", for example a write to a read-only register.'],
+  ['Register', 'A small piece of memory inside the chip, made of flip-flops, that keeps its value until the next clock edge changes it.'],
+  ['Clock edge / rising edge', 'The instant the clock goes from 0 to 1. Every register in the design updates at that instant, all together.'],
+  ['Combinational', 'Logic with no memory: its output follows its inputs right away, without waiting for a clock edge.'],
+  ['Non-blocking assignment / non-blocking', 'The Verilog "<=" used for registers. All of them take effect together at the clock edge; if one register gets two of them, the last one written wins.'],
+  ['Interrupt / IRQ', 'A signal that makes the processor stop what it is doing and handle an event, such as data arriving.'],
+  ['Write 1 to clear / write-1-to-clear', 'A register rule: writing a 1 to a bit clears it, writing a 0 leaves it alone. Used so software can acknowledge one event without touching the others.'],
+  ['Byte strobe / PSTRB', 'One bit per byte of write data. A 1 means "write this byte"; a 0 means "leave it alone".'],
+  ['Latch', 'A storage element that follows its input while its enable is on and holds the value while it is off. Usually created by accident in combinational code that forgets to assign an output.'],
+  ['Flip-flop / flip-flops', 'The basic storage element of a chip: it stores one bit and changes only on a clock edge.'],
+  ['Testbench', 'Code that drives a design with inputs and checks its outputs in simulation. It never becomes part of the chip.'],
+  ['Assertion', 'A rule written next to the design and checked automatically on every clock edge of every test, e.g. "PRDATA must be right in the ACCESS cycle of a read".'],
+  ['Coverage / cover point', 'A count of which situations the tests actually reached. Passing tests prove nothing about a case they never reached.'],
+  ['Corner case', 'A rare combination of events, such as a clear and a new interrupt on the same clock edge. Where bugs like to hide.'],
+  ['Synthesis / logic synthesis', 'The tool step that turns RTL into a netlist of real logic gates and flip-flops from a cell library, while trying to meet the timing constraints.'],
+  ['Netlist', 'The output of synthesis: a list of gates and flip-flops and the wires between them.'],
+  ['Cell library', 'The catalogue of gates the factory can build (AND, OR, flip-flops…), each with a known size, power and delay.'],
+  ['Constraint / constraints / SDC', 'Instructions to synthesis and timing tools, written in SDC (Synopsys Design Constraints format): how fast the clock is, when inputs arrive, which paths to ignore.'],
+  ['Clock period', 'The time between two rising clock edges. 1 divided by the clock frequency: 200 MHz gives 5 ns.'],
+  ['Input delay', 'How long after the clock edge a signal arrives at an input port, because it comes through logic outside the block.'],
+  ['STA / static timing analysis', 'Checking every timing path in the design by calculation instead of simulation, to prove the chip works at its clock speed.'],
+  ['Timing path', 'A route from where data starts (a flip-flop or an input) through logic to where it is captured (a flip-flop or an output).'],
+  ['Slack', 'Spare time on a timing path. Positive: it meets timing with time to spare. Negative: a violation that must be fixed.'],
+  ['Setup time / setup check / setup slack', 'Data must arrive a little before the clock edge that captures it. A setup violation means a path is too slow for the clock.'],
+  ['Hold time / hold check / hold slack', 'Data must stay stable a little after the clock edge. A hold violation means a path is too fast, and does not depend on the clock speed.'],
+  ['Clock-to-Q', 'How long after the clock edge a flip-flop\'s output changes.'],
+  ['Clock uncertainty', 'A safety margin for clock jitter and other unknowns, taken off the time available on every path.'],
+  ['Clock skew / skew', 'The difference in when the clock edge reaches two flip-flops, because the clock travels along wires of different lengths.'],
+  ['Pipeline register / pipeline', 'An extra flip-flop stage added in the middle of slow logic, so each half gets a full clock cycle. Costs one cycle of latency.'],
+  ['Latency', 'How many clock cycles a result takes to come out.'],
+  ['Simulation / simulator', 'Running the design as software, cycle by cycle, before anything is built.'],
+  ['Waveform', 'A picture of signals over time, one row per signal, one column per clock cycle. Where most bugs are found.'],
+  ['Regression', 'The full set of tests, run again after every change, to make sure nothing that used to work has broken.'],
+  ['Lint', 'A tool that reads your code and flags suspicious patterns before you simulate: unused signals, two drivers on one wire, widths that do not match.'],
+  ['Code review', 'A teammate reads your change before it is merged. Normal, expected, and nothing personal.'],
+  ['Merge / merged', 'Adding your change to the team\'s shared code, so everyone builds on it.'],
+  ['FPGA', 'A chip whose logic can be reprogrammed. Teams load their design onto one to try it at real speed long before the real chip exists.'],
+  ['Bitstream', 'The file that programs an FPGA with your design.'],
+  ['Tape-out', 'Sending the finished design to the factory to be made. After it, mistakes cost months and millions.']
 ];
-termsSet(GLOSS, ' / ', [['shots', 'Shot'], ['grinder', 'Grind size']], []);
+termsSet(GLOSS, ' / ', [['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case']], []);
