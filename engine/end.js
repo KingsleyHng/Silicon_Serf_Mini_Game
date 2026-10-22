@@ -6,7 +6,8 @@
      who   名字那一行（預設是玩家的名字）        more  稱號下面一行小字的清單
      led   燈條上遊戲名後面的幾個字              tl    最多三個時間點 [[時刻, 說明], …]（預設：開始與結束）
      share 「複製結算」與「分享連結」帶的那段字（預設：標題＋sub）
-   圖卡最多放 stats 的前六個。遊戲名、網址、標語、小字從 SHARE 來；沒填就用 HOME 的標題、副標、小字。
+     rows  圖卡上的數字 [[名稱, 數字], …]（預設：stats）
+   圖卡最多放 rows 的前六個。遊戲名、網址、標語、小字從 SHARE 來；沒填就用 HOME 的標題、副標、小字。
    按鈕：分享連結（手機叫系統的分享選單，電腦複製連結）、看結案報告／看圖卡、再玩一次、複製結算、回主頁。
    下面的連結跟主頁一樣：遊戲作者的贊助（HOME.support），與框架的出處那一行（engine/home.js；授權的條件，一定顯示）。 */
 const endEl=$('#end');
@@ -17,7 +18,7 @@ function ending(){
   const b0=STORY.beats[0],t0=b0&&STORY.segs[b0.seg]&&STORY.segs[b0.seg].t||0,start=clockOf(t0),end=clockOf(ST.clock),title=E.title||'結束了';
   endText=(E.share||[title,E.sub].filter(Boolean).join('\n'))+(SHARE.tail?'\n'+SHARE.tail:'');
   prepareCard({name:E.who!=null?E.who:ST.name||'',title,more:E.more||[],led:E.led||'',span:start+' → '+end,
-    tl:E.tl||[[start,'開始'],[end,'結束']],rows:(E.stats||[]).slice(0,6).map(r=>[String(r[0]),String(r[1])])});
+    tl:E.tl||[[start,'開始'],[end,'結束']],rows:(E.rows||E.stats||[]).slice(0,6).map(r=>[String(r[0]),String(r[1])])});
   $('#endBody').innerHTML=endWrap('<p class="end-k mono">'+end+'</p><h2>'+title+'</h2>'+(E.sub?'<p class="end-sub">'+E.sub+'</p>':'')
     +(E.stats&&E.stats.length?'<dl class="kv end-stats">'+E.stats.map(r=>'<dt>'+r[0]+'</dt><dd'+(typeof r[1]==='number'?' class="mono"':'')+'>'+r[1]+'</dd>').join('')+'</dl>':'')
     +(E.lines||[]).map(l=>'<p>'+l+'</p>').join('')

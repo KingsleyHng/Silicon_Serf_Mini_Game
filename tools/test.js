@@ -44,7 +44,10 @@ const ANSWERS = {
   scanff: '(se & si) | (~se & d)',
   ttime: '100 ms',
   rstfix: 'rst_n & (test_mode | !soft_rst)',
-  fcov: '97.0 %'
+  fcov: '97.0 %',
+  core: '131 µm',
+  skew: '0.150 ns',
+  ir: '0.880 V'
 };
 /* 拉線題（game/circuit.js 的 wireTask）的正確接法：也故意跟標準答案接得不一樣（電阻對調、換一組值），測「接法不同但電路對就算對」。vals 是下拉選單選第幾個 */
 const WIRES = {
@@ -57,6 +60,9 @@ const WIRES = {
 };
 /* 找故障題（game/dft.js 的 atpgTask）：每個故障一組抓得到的輸入（A B C D），也跟標準答案不一樣 */
 const ATPG = { atpg: ['1101', '1010'] };
+/* 擺方塊題（game/layout.js 的 floorTask）：每個方塊放哪一格（欄,列），跟標準答案不一樣；找違規題（drcTask）：該標的那幾個點 */
+const FLOOR = { floor: { CPU: '2,2', SRAM: '1,2', REGS: '2,1', TIMER: '3,1', ADC: '0,2' } };
+const DRC = { drc: ['A', 'C', 'D'] };
 /* 接一塊板子：先選值，再一根一根接（點一個腳、再點另一個腳） */
 const wireUp = async (pg, w) => {
   for (const k of Object.keys(w.vals || {})) await pg.selectOption('select[data-part="' + k + '"]', String(w.vals[k]));
@@ -116,6 +122,22 @@ async function play(br, o) {
       await click('#atpgRun'); log.push((o.last ? 'nocatch:' : 'atpg:') + task + f); await pg.waitForTimeout(50);
       if (!o.last && !(await vis('#next'))) { errors.push('inputs for ' + task + ' fault ' + f + ' were not accepted: ' + (await pg.textContent('#fb')).slice(0, 200)); break }
       continue;
+    }
+    if (await vis('#fpRun')) {   /* 擺方塊題：第一輪照 FLOOR 擺；第二輪擺 data-wrong 那個（犯規的）、檢查三次，再按「看答案」 */
+      if (await vis('#next')) { await click('#next'); log.push('next'); continue }
+      const task = await pg.getAttribute('.task', 'data-task');
+      if (await vis('#reveal')) { await click('#reveal'); log.push('reveal:' + task); continue }
+      const want = o.last ? JSON.parse(await pg.getAttribute('.task', 'data-wrong')) : FLOOR[task];
+      for (const k of Object.keys(want)) { await pg.click('.fp-pick[data-blk="' + k + '"]'); await pg.click('[data-slot="' + want[k] + '"]') }
+      await click('#fpRun'); log.push((o.last ? 'badplan:' : 'plan:') + task); await pg.waitForTimeout(50);
+      if (!o.last && !(await vis('#next'))) { errors.push('floorplan for ' + task + ' was not accepted: ' + (await pg.textContent('#fb')).slice(0, 200)); break }
+      continue;
+    }
+    if (await vis('#drcRun')) {   /* 找違規題：第一輪標 DRC 那幾個；第二輪標 data-wrong 那幾個（都沒問題的），只能檢查一次 */
+      if (await vis('#next')) { await click('#next'); log.push('next'); continue }
+      const task = await pg.getAttribute('.task', 'data-task'), want = o.last ? (await pg.getAttribute('.task', 'data-wrong')).split(',') : DRC[task];
+      for (const k of want) await pg.click('[data-spot="' + k + '"] .ring');
+      await click('#drcRun'); log.push('drc:' + task); continue;
     }
     if (await vis('#panel .qz')) {   /* 小測驗：每一題還沒選的，第一輪選第一個答案、第二輪選最後一個 */
       const picked = await pg.evaluate(last => { const g = Array.from(document.querySelectorAll('#panel .qz')).find(q => !q.querySelector('.opt.on') && q.querySelector('.opt:not([disabled])')); if (!g) return false; const os = g.querySelectorAll('.opt'); os[last ? os.length - 1 : 0].click(); return true }, !!o.last);

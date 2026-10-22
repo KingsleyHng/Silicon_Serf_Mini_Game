@@ -1,13 +1,14 @@
-/* Silicon Serf: four weeks, beat by beat.
+/* Silicon Serf: five weeks, beat by beat.
    Week 1 is the spec, RTL and verification; week 2 is synthesis, constraints and timing; week 3 is the analog side, at the lab bench with WSL;
-   week 4 is design for test, with JJH: scan, ATPG, a rule your own RTL breaks, memories and JTAG.
+   week 4 is design for test, with JJH: scan, ATPG, a rule your own RTL breaks, memories and JTAG;
+   week 5 is layout, with SYP: the floorplan, the clock tree, the design rules, IR drop, and tape-out.
    STORY.segs  the days (title card name, subtitle, start time, light). The clock counts minutes from the first Monday 00:00,
                so each day starts 1440 minutes after the one before and still reads 09:00.
                Each scene() sets the whole room, so a saved game resumes on any day looking right.
    STORY.beats one thing to do at a time: who or where to go (to), the "next step" line (guide), what is said (lines),
                an optional mini-game (mini), what is said after it (post), and what changes in the world (after).
    ST.d.p holds the points of every mini-game (minis.js); ST.d.wait and ST.d.review the two choices. The ending is written from them.
-   The end of week 4 is the probation review: accuracy is the share of all points earned, graded A to F, and 60% passes. */
+   Tape-out, at the end of week 5, is also the probation review: accuracy is the share of all points earned, graded A to F, and 60% passes. */
 const DAY = 1440;
 const day = (n, h) => n * DAY + (h || 540);
 /* Every mini-game's points, by subject: [subject, [[mini-game, most points], …]] */
@@ -18,7 +19,8 @@ const SUBJECTS = [
   ['Synthesis', [['flops', 2], ['synrep', 1], ['latch', 2], ['nolatch', 2]]],
   ['Timing', [['clock', 2], ['indelay', 2], ['setup', 2], ['setupfix', 1], ['hold', 2], ['holdfix', 1]]],
   ['Analog', [['ohm', 2], ['divider', 2], ['mos', 3], ['nand', 2], ['rise', 2], ['pullup', 2], ['rc', 2], ['filter', 2], ['sync', 2], ['gain', 2], ['amp', 2]]],
-  ['Test', [['dftwhy', 2], ['scanff', 2], ['scan', 2], ['ttime', 2], ['atpg', 2], ['rstfix', 2], ['fcov', 2], ['bist', 3]]]
+  ['Test', [['dftwhy', 2], ['scanff', 2], ['scan', 2], ['ttime', 2], ['atpg', 2], ['rstfix', 2], ['fcov', 2], ['bist', 3]]],
+  ['Layout', [['pdwhy', 2], ['core', 2], ['floor', 3], ['pdrtl', 2], ['skew', 2], ['drc', 3], ['ir', 2], ['tapeout', 3]]]
 ];
 const got = s => s[1].reduce((n, m) => n + ((ST.d.p || {})[m[0]] || 0), 0), most = s => s[1].reduce((n, m) => n + m[1], 0);
 const score = () => SUBJECTS.reduce((n, s) => n + got(s), 0), SCORE_MAX = SUBJECTS.reduce((n, s) => n + most(s), 0);
@@ -27,7 +29,7 @@ const PASS = .6, GRADES = [[.9, 'A'], [.8, 'B'], [.7, 'C'], [.6, 'D'], [0, 'F']]
 const review = () => {const s = score(), r = s / SCORE_MAX; return {s, pct: Math.floor(r * 100), g: GRADES.find(x => r >= x[0])[1], pass: r >= PASS, need: Math.ceil(PASS * SCORE_MAX) - s}};
 const pct = x => Math.floor(got(x) / most(x) * 100) + '%';
 
-/* The room on a given day: where KT is (the office upstairs unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu; jjh on the test desk) */
+/* The room on a given day: where KT is (the office upstairs unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu; jjh and syp in the test & layout pod) */
 function room(o) {
   W.show('kt', true); W.put('kt', o.kt || 'ceo');
   W.tower('reg', o.reg || 'off');
@@ -38,11 +40,14 @@ function room(o) {
   W.screen('scope', o.scope || ['‾\\_/‾\\_/‾'], '#ffd36a');
   W.screen('psu', o.psu || ['3.30 V', '0.02 A'], '#ff9e64');
   W.screen('jjh', o.jjh || ['ATPG', 'idle'], o.jjhC || '#93a9b2');
+  W.screen('syp', o.syp || ['layout', 'idle'], o.sypC || '#93a9b2');
 }
 /* Week 3: the block has signed off, everything at the desks is green */
 const WEEK3 = o => room(Object.assign({reg: 'green', skg: ['regression', 'PASS 48/48'], jjy: ['timing', 'MET ✓']}, o));
 /* Week 4: the board works too; what changes is JJH's screen */
 const WEEK4 = o => WEEK3(Object.assign({fpga: ['EVB', 'all OK ✓'], fpgaC: '#7fe3c8', skg: ['board test', 'PASS 12/12']}, o));
+/* Week 5: test has signed off too; what changes is SYP's screen */
+const WEEK5 = o => WEEK4(Object.assign({jjh: ['ATPG', 'cov 97.0% ✓'], jjhC: '#7fe3c8', mine: ['pushed', 'test_mode fix']}, o));
 
 STORY.segs = {
   mon: {name: 'Week 1 · Monday', sub: 'A badge, a laptop, and a spec to read.', t: day(0), mood: 'day',
@@ -84,7 +89,17 @@ STORY.segs = {
   thu4: {name: 'Week 4 · Thursday', sub: 'A rule violation, in your own code.', t: day(24), mood: 'day',
     scene() {WEEK4({jjh: ['DRC', 'S29 ×32'], jjhC: '#ff8a7a'})}},
   fri4: {name: 'Week 4 · Friday', sub: 'Memories, pins, and the last sign-off.', t: day(25), mood: 'day',
-    scene() {WEEK4({jjh: ['ATPG', 'cov 97.0% ✓'], jjhC: '#7fe3c8', mine: ['pushed', 'test_mode fix']})}}
+    scene() {WEEK4({jjh: ['ATPG', 'cov 97.0% ✓'], jjhC: '#7fe3c8', mine: ['pushed', 'test_mode fix']})}},
+  mon5: {name: 'Week 5 · Monday', sub: 'A netlist says who talks to whom. Not where anyone lives.', t: day(28), mood: 'day',
+    scene() {WEEK5({syp: ['floorplan', 'empty core']})}},
+  tue5: {name: 'Week 5 · Tuesday', sub: 'Where everything goes.', t: day(29), mood: 'day',
+    scene() {WEEK5({syp: ['floorplan', 'v0'], sypC: '#ffc94a'})}},
+  wed5: {name: 'Week 5 · Wednesday', sub: 'One clock, two thousand flip-flops, all at once.', t: day(30), mood: 'day',
+    scene() {WEEK5({syp: ['CTS', 'running…'], sypC: '#ffc94a'})}},
+  thu5: {name: 'Week 5 · Thursday', sub: 'Wires, and the rules for wires.', t: day(31), mood: 'day',
+    scene() {WEEK5({syp: ['DRC', '3 errors'], sypC: '#ff8a7a', jjy: ['timing', 'WNS +0.15']})}},
+  fri5: {name: 'Week 5 · Friday', sub: 'Tape-out.', t: day(32), mood: 'day',
+    scene() {WEEK5({syp: ['DRC', 'clean ✓'], sypC: '#7fe3c8', jjy: ['timing', 'WNS +0.15']})}}
 };
 
 STORY.beats = [
@@ -94,13 +109,13 @@ STORY.beats = [
       ['kt', 'Everyone here started with one small block. Yours is the APB register block for the new timer.'],
       ['kt', "People in this industry like to joke that we're silicon serfs: we work the fields, the chip gets the glory. Don't let them scare you."],
       ['me', "I'll do my best."],
-      ['kt', 'KLN leads the RTL team and will look after you. Back wall, by the stairs.']],
+      ['kt', 'KLN leads the RTL team and will look after you. The big pod of desks in the middle, under the sign.']],
     after() {if (W) W.walk('kt', 'ceo')}},
   {seg: 'mon', to: 'kln', guide: 'Find KLN, your team lead',
     lines: () => [['kln', "Welcome. I'm KLN. Your block is small on purpose: three registers on APB, so the processor can set up the timer and read its status."],
       ['kln', 'Two weeks from now it should be RTL, verified, synthesized and meeting timing. That is the whole front-end in miniature.'],
       ['kln', 'Rule one here: no code before you have read the spec. QYL wrote it and will walk you through the bus.'],
-      ['kln', 'Rule zero: log in. Your desk is the one at the front with the empty screen.']]},
+      ['kln', 'Rule zero: log in. Your desk is the one across from mine, with the empty screen.']]},
   {seg: 'mon', to: 'mydesk', guide: 'Log in at your desk',
     lines: () => [['sys', 'You type your new username. The screen thinks about it, then says: account not found.'],
       ['sys', 'Your phone buzzes before you can try again.']],
@@ -114,7 +129,7 @@ STORY.beats = [
         ['Sit with SKG and watch a regression run first', () => {ST.d.wait = 'skg'; done()}]]});
     },
     post: () => ST.d.wait === 'skg'
-      ? [['sys', 'You walk over to the verification desk.'], ['skg', "Sure, pull up a chair. This is the regression: forty-eight tests, every night, on every block. Green means nothing broke."],
+      ? [['sys', 'You roll your chair over to SKG, at the desk next to yours.'], ['skg', "Sure, pull up a chair. This is the regression: forty-eight tests, every night, on every block. Green means nothing broke."],
         ['skg', "When it goes red on your block, I'll come and find you. Now go and read the spec, QYL is waiting."]]
       : [['sys', 'You take a printed copy of the spec and head upstairs to the meeting room.']],
     after() {if (W) W.screen('mine', ['account OK', 'no licence'], '#ffc94a')}},
@@ -360,12 +375,12 @@ STORY.beats = [
       ['kt', 'Three weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, and wired up the board it lives on.']].concat(got(SUBJECTS[5]) >= 18
       ? [['kt', 'WSL says you got most of the analog right the first time. Most digital engineers never even look at the other side of the pin.']]
       : [['kt', 'WSL says the analog side made you sweat. Good. Most digital engineers never even look at the other side of the pin.']])
-      .concat([['kt', 'One more week before your block is really done. On Monday JJH from test wants it: the factory has to be able to check every chip made from it.'],
+      .concat([['kt', 'Your block is not done yet. On Monday JJH from test wants it: the factory has to be able to check every chip made from it.'],
         ['kt', 'Go home. Rest. Nanoseconds are tiring, and microamps are worse.']])},
 
   /* ═════════ Week 4 · Monday: why every chip is tested ═════════ */
-  {seg: 'mon4', to: 'jjh', guide: 'Meet JJH, the desk in the middle',
-    lines: () => [['jjh', "Hi, I'm JJH. Design for test: DFT. Mine is the desk in the middle you have been walking around for three weeks."],
+  {seg: 'mon4', to: 'jjh', guide: 'Meet JJH, in the pod by the lounge',
+    lines: () => [['jjh', "Hi, I'm JJH. Design for test: DFT. Mine is the desk in the pod by the lounge: you have walked past it for three weeks."],
       ['jjh', 'Your block is in the tape-out database. In a few months the factory makes a hundred thousand chips from it, and some of them will be broken.'],
       ['jjh', 'Not your design: the silicon. A speck of dust, a thin wire, a missing contact. My job is to make sure we can catch every broken chip before a customer does.']],
     mini: miniDftWhy,
@@ -428,16 +443,86 @@ STORY.beats = [
     lines: () => [['kt', 'Four weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, wired up its board and made it testable.']].concat(got(SUBJECTS[6]) >= 13
       ? [['kt', 'JJH says you found faults faster than the tool does. JJH never says things like that.']]
       : [['kt', 'JJH says you argued with nobody and fixed everything. That is the job.']])
+      .concat([['kt', 'One week left before the masks can be ordered. On Monday SYP from layout takes your block: the factory needs a drawing of every transistor, not a list of gates.'],
+        ['kt', 'Go home. Rest. Next week you find out how big your code really is.']])},
+
+  /* ═════════ Week 5 · Monday: what layout is, and how big ═════════ */
+  {seg: 'mon5', to: 'syp', guide: 'Meet SYP, next to JJH',
+    lines: () => [['syp', "Hi, I'm SYP. Layout. Mine is the desk next to JJH's: you have walked past it every morning for four weeks."],
+      ['syp', 'JJY gave me the netlist on Friday: the whole chip, your block inside it. Fourteen thousand cells and the wires between them.'],
+      ['syp', 'The netlist says what connects to what. It does not say where anything goes. That is my job, and what comes out is the GDS: the drawing the factory makes its masks from.']],
+    mini: miniPdWhy,
+    post: () => PTS().pdwhy === 2
+      ? [['syp', 'Right. Your RTL says what the chip does. My layout says where every transistor of it sits.']]
+      : [['syp', 'A netlist knows who talks to whom, not where anyone lives. Layout gives every cell an address, and every wire a street.']]},
+  {seg: 'mon5', to: 'mydesk', guide: 'Work out how big the core is',
+    lines: () => [['syp', 'First question for any layout: how big? I sent you the cell area from synthesis. Leave room for the wires, or nothing will route.']],
+    mini: done => codeTask(T_CORE, done),
+    post: () => [['syp', 'About 131 µm on a side. Tomorrow we decide what goes where in it.']],
+    after() {if (W) W.screen('syp', ['core', '131 × 131 µm'], '#7fe3c8')}},
+
+  /* ═════════ Week 5 · Tuesday: the floorplan, and your RTL seen from layout ═════════ */
+  {seg: 'tue5', to: 'syp', guide: 'Floorplan the chip with SYP',
+    lines: () => [['syp', 'Before a single cell is placed, the big pieces go down: the CPU, the SRAM, WSL\'s ADC, the timer, and your register block. That is the floorplan.'],
+      ['syp', 'Each line between two blocks is a bundle of wires. Long bundles are slow, and they crowd each other. Keep the thick ones short.'],
+      ['syp', 'Two rules. The SRAM is a macro, one solid piece no wire can cross, so it goes against an edge. The ADC is analog: a corner, away from the noisy CPU.']],
+    mini: done => floorTask(T_FLOOR, done),
+    post: () => [['syp', 'A floorplan I can work with. Placement runs tonight: fourteen thousand cells, each in the best spot the tool can find.']],
+    after() {if (W) W.screen('syp', ['placement', 'running…'], '#ffc94a')}},
+  {seg: 'tue5', to: 'kln', guide: "KLN has SYP's placement notes",
+    lines: () => [['kln', 'SYP sent me the placement notes. Two of them are about signals from your block.'],
+      ['kln', 'Layout is where RTL habits come home. Read them and tell me what they mean.']],
+    mini: miniPdRtl,
+    post: () => [['kln', 'Every line of RTL you write becomes wire somewhere. Write it as if you had to route it yourself.']]},
+
+  /* ═════════ Week 5 · Wednesday: the clock tree ═════════ */
+  {seg: 'wed5', to: 'syp', guide: 'See how the clock reaches every flop',
+    lines: () => [['syp', 'The clock is the biggest net in the chip: one pin, two thousand flip-flops, and the edge should reach all of them at the same moment.'],
+      ['syp', 'So the tool grows a tree of buffers out to every flop: clock tree synthesis, CTS. It is never perfect. The difference in arrival times is the skew.'],
+      ['syp', 'JJY wants the real numbers. They are on JJY\'s screen now.']],
+    after() {if (W) {W.screen('syp', ['CTS', 'skew 0.15 ns'], '#7fe3c8'); W.screen('jjy', ['timing', 'post-CTS'], '#ffc94a')}}},
+  {seg: 'wed5', to: 'jjy', guide: 'Check the timing with the real clock',
+    lines: () => [['jjy', 'In week 2 the clock was ideal: every flop got the edge at the same moment. Now it is real.'],
+      ['jjy', 'Here is your worst path again, with the clock tree in it. Same logic, same 4.60 ns.']],
+    mini: done => codeTask(T_SKEW, done),
+    post: () => [['jjy', 'Still positive. The capture clock came early and took 0.15 ns off you. One more buffer in the wrong place and you would be negative.']],
+    after() {if (W) W.screen('jjy', ['timing', 'WNS +0.15'], '#7fe3c8')}},
+
+  /* ═════════ Week 5 · Thursday: routing, the design rules, and the power grid ═════════ */
+  {seg: 'thu5', to: 'syp', guide: 'Check the routing with SYP',
+    lines: () => [['syp', 'Routing finished overnight. Ten layers of metal, stacked: on one layer the wires run left to right, on the next up and down, and vias join them.'],
+      ['syp', 'The factory has a rule for every shape: how thin, how close. Break one and chips come back with shorts or opens. The rule deck has two thousand rules.'],
+      ['syp', 'Here are three of them, and a corner of your block. Mark everything that breaks one.']],
+    mini: done => drcTask(T_DRC, done),
+    post: () => [['syp', 'I fixed those, and four hundred like them. DRC is clean.']],
+    after() {if (W) W.screen('syp', ['DRC', 'clean ✓'], '#7fe3c8')}},
+  {seg: 'thu5', to: 'wsl', guide: 'WSL wants to talk about the power grid',
+    lines: () => [['wsl', 'SYP showed me the power grid. Every gate in the timer draws its current from the pads, through metal straps.'],
+      ['wsl', "Metal is not a perfect conductor. Current through a resistance: Ohm's law again. On a chip they call the loss IR drop."]],
+    mini: done => codeTask(T_IR, done),
+    post: () => [['wsl', '0.88 V. A 2% drop, fine; sign-off allows about five. Past that the gates slow down, and the slack JJY signed off is gone.']]},
+
+  /* ═════════ Week 5 · Friday: tape-out ═════════ */
+  {seg: 'fri5', to: 'syp', guide: 'The last checks before tape-out',
+    lines: () => [['syp', 'Last day. Three questions stand between your block and the factory. I get asked all three at every tape-out.']],
+    mini: miniTapeout,
+    post: () => [['syp', 'DRC clean, LVS clean, timing met, fault coverage 97%. I am writing the GDS now.']],
+    after() {if (W) {W.screen('syp', ['GDS', 'sent ✓'], '#7fe3c8'); W.walk('kt', 'sypV')}}},
+  {seg: 'fri5', to: 'kt', guide: 'KT came down for the tape-out',
+    lines: () => [['kt', 'The GDS went to the factory ten minutes ago. That was a tape-out, and your block is in it.'],
+      ['kt', 'Five weeks ago you had a badge and a laptop. Since then your block went from a spec to RTL, to gates, to a board, to a test, and now to a drawing of every transistor.']].concat(got(SUBJECTS[7]) >= 15
+      ? [['kt', 'SYP says your floorplan was better than the tool\'s first try. SYP does not hand out compliments.']]
+      : [['kt', 'SYP says you learned the one thing layout teaches: every line of RTL becomes a wire somewhere.']])
       .concat([['kt', 'The masks are ordered. In twelve weeks the first wafers come back, and every chip on them will go through the test you helped build.']])
       .concat(review().pass
-        ? [['kt', 'Which brings me to your probation review. ' + review().pct + '% across four weeks: grade ' + review().g + '. You pass.'],
-          ['kt', 'Welcome to the team, properly. Go home. Rest. On Monday: the timer itself.']]
-        : [['kt', 'Which brings me to your probation review. ' + review().pct + '% across four weeks: grade F. The bar is 60%.'],
-          ['kt', 'Nobody is fired for one hard month. But the timer waits: we extend your probation, and you go through the weak spots again with the team.'],
+        ? [['kt', 'Which brings me to your probation review. ' + review().pct + '% across five weeks: grade ' + review().g + '. You pass.'],
+          ['kt', 'Welcome to the team, properly. Go home. Rest. On Monday: the next chip.']]
+        : [['kt', 'Which brings me to your probation review. ' + review().pct + '% across five weeks: grade F. The bar is 60%.'],
+          ['kt', 'Nobody is fired for one hard month. But the next chip waits: we extend your probation, and you go through the weak spots again with the team.'],
           ['kt', 'Go home. Rest. On Monday we try again.']])},
-  {seg: 'fri4', end: true, t: day(25, 1050),
-    lines: () => [['sys', 'Four weeks. One block, from spec to sign-off, the board it lives on, and the test that will check every chip made from it. '
-      + (review().pass ? 'Probation passed. Next: the timer itself.' : 'Probation extended: the timer waits until you pass.')]]}
+  {seg: 'fri5', end: true, t: day(32, 1050),
+    lines: () => [['sys', 'Five weeks. One block, from spec to RTL, gates, a board, a test and a layout, and now it is at the factory. '
+      + (review().pass ? 'Probation passed. On Monday: the next chip.' : 'Probation extended: the next chip waits until you pass.')]]}
 ];
 
 /* Ending card: written from what actually happened. The title is the review's verdict and grade; each subject shows its points and accuracy */
@@ -447,12 +532,13 @@ STORY.ending = () => {
   return {
     title: (pass ? 'PASS' : 'FAIL') + ' · Grade ' + g,
     more: [p + '% correct', 'pass mark 60%'],
-    sub: {A: 'Tape-out material. Your first block, its board and its test, nearly flawless.', B: 'A promising serf. Your first block signed off, with a few bruises on the way.',
+    sub: {A: 'Tape-out material. Your first block, from spec to tape-out, nearly flawless.', B: 'A promising serf. Your first block signed off, with a few bruises on the way.',
       C: 'A solid serf. Your block signed off, and you know which corners to check twice.', D: 'Passed, just. Your block signed off, but the review noticed every slip.',
       F: 'Probation extended. Your block signed off, but too many answers went wrong on the way.'}[g],
-    led: '4 weeks',
-    tl: [['WK 1–2', 'RTL, verification, timing'], ['WK 3', 'Analog and the board'], ['WK 4', 'Design for test']],
-    /* the card shows the first six: the five big subjects and Test; Spec and the review follow */
+    led: '5 weeks',
+    tl: [['WK 1–2', 'RTL, verification, timing'], ['WK 3–4', 'The board and test'], ['WK 5', 'Layout, tape-out']],
+    /* the card has room for six: synthesis and timing share one; the report lists every subject, then Spec and the review */
+    rows: [SUBJECTS[1], SUBJECTS[2], ['Synth & timing', SUBJECTS[3][1].concat(SUBJECTS[4][1])], SUBJECTS[5], SUBJECTS[6], SUBJECTS[7]].map(x => [x[0], got(x) + ' / ' + most(x) + ' · ' + pct(x)]),
     stats: SUBJECTS.slice(1).concat(SUBJECTS.slice(0, 1)).map(x => [x[0], got(x) + ' / ' + most(x) + ' · ' + pct(x)])
       .concat([['Review', ST.d.review === 'explain' ? 'Explained' : ST.d.review === 'ask' ? 'Asked why' : 'Argued']]),
     lines: [
@@ -465,7 +551,7 @@ STORY.ending = () => {
       ST.d.review === 'explain' ? 'KLN approved your RTL on your own explanation.' : ST.d.review === 'ask' ? 'You asked KLN why, and came away knowing the reason behind your own code.' : 'KLN approved your RTL, and reminded you that passing tests are not a reason.',
       ST.d.wait === 'skg' ? 'You watched a regression on your first day, so the red light on Thursday did not scare you.' : 'You read the spec before writing a line, as KLN asked.'
     ],
-    share: 'Silicon Serf: four weeks taking my first chip block from spec to sign-off, its board and its test. Probation review: ' + (pass ? 'PASS' : 'FAIL') + ', grade ' + g + ', ' + p + '% correct.'
+    share: 'Silicon Serf: five weeks taking my first chip block from spec to tape-out. Probation review: ' + (pass ? 'PASS' : 'FAIL') + ', grade ' + g + ', ' + p + '% correct.'
   };
 };
 
@@ -475,6 +561,7 @@ const CHAT = {
   skg: ['If I find nothing, I worry my tests are too easy.', 'Every bug I find here is one the customer never sees.'],
   qyl: ['If the spec is unclear, tell me. Then it is my bug, not yours.', 'Every register bit has a reason. Ask me about any of them.'],
   jjy: ['Every path has a deadline. Most of them do not know it yet.', 'A nanosecond is about thirty centimetres of light. Chips are small for a reason.'],
+  syp: ['Every line of your RTL is a wire somewhere. I have met most of them.', 'The design rules are not suggestions. The factory reads every one.', 'A macro in the middle of the core is a rock in a river.'],
   jjh: ['Every chip gets tested. Every single one.', 'A defect does not care how good your design is.', 'If the tester cannot reach a flip-flop, it might as well not be there.'],
   wsl: ['Everything is analog if you zoom in far enough.', 'A one and a zero are just two voltages we agreed not to argue about.', 'The scope never lies. The probe sometimes does.'],
   kt: ['Go on, the team is waiting for you.', 'My door is always open. It is also made of glass, so I see who walks past it.', 'That wafer on the stand is from our first tape-out. Every die on it worked.']

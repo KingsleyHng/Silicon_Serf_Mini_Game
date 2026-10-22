@@ -3,7 +3,7 @@
 
 /* Home screen */
 HOME.title = 'Silicon Serf';
-HOME.sub = 'Your first four weeks as a chip front-end engineer';
+HOME.sub = 'Your first five weeks as a chip front-end engineer';
 HOME.fine = 'A story game made with the fab24hr engine. KT Silicon Labs and everyone in it are fictional.';
 HOME.support = null;
 
@@ -18,6 +18,7 @@ STORY.cast = {
   jjy: {name: 'JJY', role: 'Synthesis and timing engineer', tag: 'STA', color: '#c0621d', about: 'Turns RTL into gates and makes sure every path in the chip is fast enough, and not too fast. Speaks fluent nanoseconds.'},
   wsl: {name: 'WSL', role: 'Analog design engineer', tag: 'AMS', color: '#0f7f80', about: 'Designs the parts of the chip that are not ones and zeros: the reference, the ADC, the pads. Lives at the lab bench, next to a soldering iron and an oscilloscope.'},
   jjh: {name: 'JJH', role: 'DFT engineer', tag: 'DFT', color: '#b8336a', about: 'Design for test: makes sure every chip that comes out of the factory can be checked, and every broken one caught. Thinks in scan chains and fault coverage.'},
+  syp: {name: 'SYP', role: 'Layout engineer', tag: 'PD', color: '#5f7a1c', about: 'Physical design: turns the netlist into the shapes the factory makes the masks from. Places every cell, routes every wire, and knows the design rules by heart.'},
   kt: {name: 'KT', role: 'CEO', tag: 'CEO', color: '#b2382f', about: 'Founded KT Silicon Labs. Still walks the floor every week and remembers everyone\'s first block.'},
   marvin: {name: 'Marvin', role: 'IT support, on the phone', tag: 'IT', color: '#55616b', about: 'Sets up accounts, licences and laptops. Mostly heard, rarely seen.'}
 };
@@ -29,14 +30,15 @@ WORLD.cast = {
   jjy: {label: 'JJY · Synthesis & timing', fill: '#c0621d', ink: '#ffffff', cloth: 0x7a4a2a, color: 0xc0621d, hair: 0x241a12, node: 'jjy', face: 0},
   wsl: {label: 'WSL · Analog design', fill: '#0f7f80', ink: '#ffffff', cloth: 0x2f6f70, color: 0x0f7f80, hair: 0x1c1410, node: 'wsl', face: Math.PI},
   jjh: {label: 'JJH · DFT', fill: '#b8336a', ink: '#ffffff', cloth: 0x6a2a44, color: 0xb8336a, hair: 0x2a1c14, node: 'jjh', face: Math.PI},
+  syp: {label: 'SYP · Layout', fill: '#5f7a1c', ink: '#ffffff', cloth: 0x3f5226, color: 0x5f7a1c, hair: 0x1e1612, node: 'syp', face: Math.PI},
   kt: {label: 'KT · CEO', fill: '#b2382f', ink: '#ffffff', cloth: 0x22262b, color: 0xb2382f, hair: 0x2a2a2a, node: 'ceo', face: 0}
 };
 
 /* Places you walk to (not people). at = where you stand to use it; mark = where the "!" floats. */
 STORY.places = {
-  mydesk: {name: 'Your desk', at: [-.4, 3.7], mark: [-.4, 2.4, 2.3], go: 'Go to your desk'},
-  fpga: {name: 'FPGA bench', at: [6, -4.1], mark: [6, 2.3, -5.4], go: 'Go to the FPGA bench'},
-  pantry: {name: 'Pantry', at: [7, -0.6], mark: [8.3, 2.4, -0.6], go: 'Go to the pantry'}
+  mydesk: {name: 'Your desk', at: [-2.4, -.6], mark: [-2.4, 2.3, -2.3], go: 'Go to your desk'},
+  fpga: {name: 'FPGA bench', at: [6.4, -6.1], mark: [6.4, 2.3, -7.4], go: 'Go to the FPGA bench'},
+  pantry: {name: 'Pantry', at: [11.4, -2.6], mark: [12.5, 2.4, -2.9], go: 'Go to the pantry'}
 };
 
 /* Words players can tap for a plain explanation. [word, explanation]. Alternative spellings: separate with " / ". */
@@ -126,10 +128,29 @@ const GLOSS = [
   ['Fault coverage', 'The share of all modelled faults that at least one test pattern catches. Sign-off usually wants 95% or more.'],
   ['Tester / ATE', 'The machine in the factory that runs the test patterns on every chip and sorts the good ones from the broken ones.'],
   ['Test mode / test_mode', 'A signal that is 1 only while the chip is on the tester. Logic that would get in the way of test, like an internal reset, is bypassed with it.'],
-  ['DRC', 'Design rule check. In DFT: a check that every flip-flop can be controlled and observed by the tester, for example that no reset comes from inside the chip.'],
+  ['DRC', "Design rule check. In layout: the factory's rules for every shape, such as how thin a wire may be and how close to the next. In DFT: a check that every flip-flop can be controlled and observed by the tester."],
   ['MBIST / memory BIST / BIST', 'Built-in self-test: a small engine on the chip that writes and reads test patterns into a memory at full speed, then reports pass or fail.'],
   ['March test', 'The usual memory test: walk through every address writing and reading 0s and 1s, up the addresses and then down.'],
   ['JTAG', "Four or five pins (TCK, TMS, TDI, TDO) that give a tester or a board access to a chip's test logic, even after it is soldered down."],
-  ['Boundary scan', 'A scan chain around the pins of a chip, reached through JTAG, that can check the solder joints of a board pin by pin.']
+  ['Boundary scan', 'A scan chain around the pins of a chip, reached through JTAG, that can check the solder joints of a board pin by pin.'],
+  ['Layout / physical design', 'Turning the netlist into shapes on silicon: where every cell sits, and which path every wire takes through the metal layers.'],
+  ['GDS / GDSII', 'The file layout hands to the factory: every shape on every layer of the chip. The masks are made from it.'],
+  ['Floorplan', 'The first step of layout: the size of the core, and where the big blocks and the pins go.'],
+  ['Core', 'The middle of the chip, where the standard cells and the blocks go. The pads sit around it.'],
+  ['Utilisation', 'How much of the core the cells fill. Around 70% leaves room for the wires and for the buffers the tools add later.'],
+  ['Standard cells / standard cell', 'The gates and flip-flops of the cell library, all the same height so they line up in rows.'],
+  ['Macro', 'A big ready-made block, such as an SRAM, placed as one solid piece. Wires cannot cross it, so macros usually go to the edges.'],
+  ['Placement', 'Giving every standard cell its spot in the core, close to the cells it talks to.'],
+  ['Fanout', 'How many inputs one signal drives. A net with a high fanout needs a tree of buffers to reach them all in time.'],
+  ['Clock tree / CTS', 'Clock tree synthesis: a tree of buffers that carries the clock from one pin to every flip-flop, as close to the same moment as it can.'],
+  ['Routing', 'Drawing every wire of the netlist through the metal layers, without breaking a design rule.'],
+  ['Metal layer / metal layers', 'The stacked layers of wires above the transistors, ten or more in a modern chip. Wires on one layer run one way, on the next the other way.'],
+  ['Via / vias', 'A small square that joins a wire on one metal layer to a wire on the next. Without one, two wires that cross are not connected.'],
+  ['IR drop', 'The voltage lost in the power wires on the way to the gates: current × resistance. Too much, and the gates slow down.'],
+  ['LVS', 'Layout versus schematic: rebuilds the circuit from the shapes of the layout and checks it is the same as the netlist.'],
+  ['Common centroid / common-centroid', 'Analog layout trick: split matched parts into equal pieces and interleave them around one centre, so a drift across the chip affects them all the same.'],
+  ['ECO / metal-only ECO', 'Engineering change order: a small fix made late. A metal-only ECO rewires spare gates by changing only the upper metal layers, so the transistor masks can stay.'],
+  ['Spare cells / spare gates', 'Unused gates scattered over a block on purpose, so a late bug can be fixed by rewiring them in the metal layers.'],
+  ['Mask / masks', 'The stencils the factory uses to print each layer of the chip. A full set costs millions.']
 ];
-termsSet(GLOSS, ' / ', [['scan chains', 'Scan chain'], ['scan flip-flops', 'Scan flip-flop'], ['test patterns', 'Test pattern'], ['testers', 'Tester'], ['stuck-at-0', 'Stuck-at fault'], ['stuck-at-1', 'Stuck-at fault'], ['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case'], ['transistors', 'Transistor'], ['pull-ups', 'Pull-up'], ['op-amps', 'Op-amp'], ['ADCs', 'ADC']], []);
+termsSet(GLOSS, ' / ', [['scan chains', 'Scan chain'], ['macros', 'Macro'], ['clock trees', 'Clock tree'], ['scan flip-flops', 'Scan flip-flop'], ['test patterns', 'Test pattern'], ['testers', 'Tester'], ['stuck-at-0', 'Stuck-at fault'], ['stuck-at-1', 'Stuck-at fault'], ['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case'], ['transistors', 'Transistor'], ['pull-ups', 'Pull-up'], ['op-amps', 'Op-amp'], ['ADCs', 'ADC']], []);

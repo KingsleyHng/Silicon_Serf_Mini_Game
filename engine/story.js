@@ -14,7 +14,7 @@
      STORY.places={id:{name,at:[x,z],mark:[x,y,z],go}}  地方：名字、走到哪裡才算到了、「！」掛在哪、還在遠處時按鈕上的字
      STORY.cast={id:{name,role,tag,color}}  對話框上的名字、職稱、色塊裡的字與顏色（'me' 的名字是玩家填的）
      STORY.talk(id)  跟現在不是要找的人講話（沒有設定就說一句「在忙」）
-     STORY.ending()  結算卡的內容 {title, sub, lines:[…], stats:[[字, 數字], …]}，圖卡用的 who、led、tl、more、share 可以省略（engine/end.js）
+     STORY.ending()  結算卡的內容 {title, sub, lines:[…], stats:[[字, 數字], …]}，圖卡用的 who、led、tl、more、rows、share 可以省略（engine/end.js）
    ST 是進度（每做完一件事存一次）：q 第幾件事、seg 現在的時刻、clock 遊戲裡幾點（分鐘）、name 玩家名字、
    d 遊戲自己要記的東西（選了什麼、拿到什麼；只放得進 JSON 的值）。 */
 const STORY={segs:{},beats:[],places:{},cast:{},talk:null,ending:null};

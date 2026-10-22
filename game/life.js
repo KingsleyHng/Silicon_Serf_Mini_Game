@@ -3,8 +3,8 @@
    walks straight back, so the story always finds people where it expects them. Runs on MOVE.after (every 0.2 s) and uses only W. */
 const LIFE = {
   /* Where a visitor stands next to each person's desk (nodes in office.js), and the break spots: [node, [x, z] to look at] */
-  visit: {kln: 'klnV', skg: 'skgV', jjy: 'jjyV', wsl: 'wslV', jjh: 'jjhV', qyl: 'qylV', kt: 'ktV'},
-  breaks: [['pantry', [8.6, -1.4]], ['pantry2', [8.6, .2]], ['cooler', [-8.6, .45]]],
+  visit: {kln: 'klnV', skg: 'skgV', jjy: 'jjyV', wsl: 'wslV', jjh: 'jjhV', syp: 'sypV', qyl: 'qylV', kt: 'ktV'},
+  breaks: [['pantry', [12.55, -3.2]], ['pantry2', [10.4, -4.4]], ['cooler', [-12.6, .45]], ['pong', [10.6, .9]], ['lounge', [3.4, 6.6]]],
   /* What people say when they get to a colleague, what the colleague answers, and what they say on a break */
   ask: {
     kln: ['Got a minute for a review?', 'How is the merge going?', 'Lunch later?'],
@@ -12,11 +12,12 @@ const LIFE = {
     jjy: ['Who changed the clock constraints?', 'Your netlist is 3% smaller now.', 'Hold slack looks fine today.'],
     wsl: ['Has anyone seen my scope probe?', 'The board needs another pull-up.', 'Coffee first, then the ADC.'],
     jjh: ['Did anyone touch the scan settings?', 'Coverage went up two points overnight.', 'Is that memory on the BIST list?'],
+    syp: ['Who put a wire across my SRAM?', 'DRC is clean. For now.', 'Can I borrow two microns of your block?'],
     qyl: ['I updated the spec. Again.', 'Quick question about the bus.', 'Can I borrow you for five minutes?'],
     kt: ['How is everyone doing?', 'Anything blocking you?', 'Good work this week.']
   },
   reply: ['Sure.', 'Give me a second.', 'Good timing.', 'Mostly green.', 'Again?', 'Let me finish this line.', 'Sounds good.'],
-  rest: ['Coffee time.', 'Who finished the oat milk?', 'Just stretching my legs.', 'One more cup.', 'Water break.']
+  rest: ['Coffee time.', 'Who finished the oat milk?', 'Just stretching my legs.', 'One more cup.', 'Water break.', 'Anyone up for a game?', 'Five minutes on the sofa.']
 };
 const life = {away: {}, next: 0, freeSince: 0, last: {}};
 const pickOne = a => a[Math.random() * a.length | 0];

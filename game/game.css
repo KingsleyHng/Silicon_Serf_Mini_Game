@@ -83,3 +83,39 @@
 .atpg-ins{flex-wrap:wrap;gap:8px}
 .atpg-in{font-family:var(--font-mono);min-width:64px}
 .atpg-in[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-edge)}
+
+/* Floorplan and DRC (layout.js): blocks to place, fly lines for the bundles of wires; two metal layers with spots to mark */
+.fp-nets{margin:4px 0 8px;padding-left:18px}
+.fp-nets li{margin:1px 0}
+.fp-picks{flex-wrap:wrap;gap:8px}
+.fp-pick{font-family:var(--font-mono);border-left:6px solid var(--blk)}
+.fp-pick.placed{opacity:.65}
+.fp-pick[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-edge);border-left-color:var(--blk);opacity:1}
+.wb .fp-core{fill:#13232e;stroke:#cfdbe3;stroke-width:2}
+.wb .fp-slot{fill:transparent;stroke:#36505f;stroke-dasharray:5 4;cursor:pointer;outline:none}
+.wb .fp-slot:hover,.wb .fp-slot:focus-visible{stroke:#4cc47c;stroke-width:2}
+.wb .fp-pin{fill:#f5c26b}
+.wb .fp-blk rect{stroke:#0e1a22;stroke-width:2;pointer-events:none}
+.wb .fp-blk.sel rect{stroke:#ffffff;stroke-width:3;stroke-dasharray:6 4}
+.wb .fp-name text{paint-order:stroke;stroke:#0e1a22;stroke-width:3px;stroke-linejoin:round}
+.wb .fp-name text.sub{fill:#e3ebf0}
+.wb .fly{stroke:#f5c26b;stroke-opacity:.75;stroke-linecap:round;pointer-events:none}
+.task b.m1{color:#3b7dd8}
+.task b.m2{color:#c94f7c}
+.drc-rules{border-collapse:collapse;font-size:14px;margin:6px 0 10px}
+.drc-rules th{text-align:left;padding:2px 14px 2px 0;color:var(--muted);font-weight:600;vertical-align:top}
+.drc-why{padding-left:18px;margin:6px 0}
+.drc-why li{margin:3px 0}
+.wb .m1{fill:#3b7dd8;fill-opacity:.85}
+.wb .m2{fill:#d9628f;fill-opacity:.7}
+.wb .via{fill:#e8eef2}
+.wb .via-x{stroke:#0e1a22;stroke-width:1.5}
+.wb .drc-spot{cursor:pointer;outline:none}
+.wb .drc-spot .ring{fill:transparent;stroke:#f5c26b;stroke-width:2;stroke-dasharray:4 3}
+.wb .drc-spot .tag{fill:#0e1a22;stroke:#f5c26b;stroke-width:2}
+.wb .drc-spot:hover .ring,.wb .drc-spot:focus-visible .ring{stroke-width:3.5}
+.wb .drc-spot.on .ring,.wb .drc-spot.hit .ring,.wb .drc-spot.miss .ring{stroke:#ff6b6b;stroke-dasharray:none;stroke-width:3}
+.wb .drc-spot.on .tag,.wb .drc-spot.false .tag,.wb .drc-spot.miss .tag{fill:#ff6b6b;stroke:#ff6b6b}
+.wb .drc-spot.hit .tag{fill:#2b8a57;stroke:#4cc47c}
+.wb .drc-spot.fine .ring,.wb .drc-spot.false .ring{stroke:#8aa0ad}
+.wb .drc-spot.fine .tag{stroke:#8aa0ad}
