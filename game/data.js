@@ -3,7 +3,7 @@
 
 /* Home screen */
 HOME.title = 'Silicon Serf';
-HOME.sub = 'Your first three weeks as a chip front-end engineer';
+HOME.sub = 'Your first four weeks as a chip front-end engineer';
 HOME.fine = 'A story game made with the fab24hr engine. KT Silicon Labs and everyone in it are fictional.';
 HOME.support = null;
 
@@ -17,6 +17,7 @@ STORY.cast = {
   qyl: {name: 'QYL', role: 'Chip architect', tag: 'ARCH', color: '#7a4bb3', about: 'Wrote the spec for the peripheral block you are building. Knows why every register bit exists.'},
   jjy: {name: 'JJY', role: 'Synthesis and timing engineer', tag: 'STA', color: '#c0621d', about: 'Turns RTL into gates and makes sure every path in the chip is fast enough, and not too fast. Speaks fluent nanoseconds.'},
   wsl: {name: 'WSL', role: 'Analog design engineer', tag: 'AMS', color: '#0f7f80', about: 'Designs the parts of the chip that are not ones and zeros: the reference, the ADC, the pads. Lives at the lab bench, next to a soldering iron and an oscilloscope.'},
+  jjh: {name: 'JJH', role: 'DFT engineer', tag: 'DFT', color: '#b8336a', about: 'Design for test: makes sure every chip that comes out of the factory can be checked, and every broken one caught. Thinks in scan chains and fault coverage.'},
   kt: {name: 'KT', role: 'CEO', tag: 'CEO', color: '#b2382f', about: 'Founded KT Silicon Labs. Still walks the floor every week and remembers everyone\'s first block.'},
   marvin: {name: 'Marvin', role: 'IT support, on the phone', tag: 'IT', color: '#55616b', about: 'Sets up accounts, licences and laptops. Mostly heard, rarely seen.'}
 };
@@ -27,6 +28,7 @@ WORLD.cast = {
   qyl: {label: 'QYL · Architect', fill: '#7a4bb3', ink: '#ffffff', cloth: 0x6b5a7a, color: 0x7a4bb3, hair: 0x14100e, long: true, node: 'qyl', face: 0},
   jjy: {label: 'JJY · Synthesis & timing', fill: '#c0621d', ink: '#ffffff', cloth: 0x7a4a2a, color: 0xc0621d, hair: 0x241a12, node: 'jjy', face: 0},
   wsl: {label: 'WSL · Analog design', fill: '#0f7f80', ink: '#ffffff', cloth: 0x2f6f70, color: 0x0f7f80, hair: 0x1c1410, node: 'wsl', face: Math.PI},
+  jjh: {label: 'JJH · DFT', fill: '#b8336a', ink: '#ffffff', cloth: 0x6a2a44, color: 0xb8336a, hair: 0x2a1c14, node: 'jjh', face: Math.PI},
   kt: {label: 'KT · CEO', fill: '#b2382f', ink: '#ffffff', cloth: 0x22262b, color: 0xb2382f, hair: 0x2a2a2a, node: 'ceo', face: 0}
 };
 
@@ -113,6 +115,21 @@ const GLOSS = [
   ['Synchronizer', 'Two flip-flops in a row on the receiving clock. A signal from outside that clock may leave the first one metastable; the second gives it a whole cycle to settle.'],
   ['Metastable / metastability', 'What a flip-flop does when its input changes right at the clock edge: its output can hover between 0 and 1 for a while before it settles.'],
   ['Op-amp / operational amplifier', 'An amplifier with a + and a − input and a huge gain. With feedback to the − input, it moves its output until both inputs are at the same voltage.'],
-  ['Feedback', "Taking part of a circuit's output back to its input. Negative feedback, to the − input, makes an amplifier steady and precise."]
+  ['Feedback', "Taking part of a circuit's output back to its input. Negative feedback, to the − input, makes an amplifier steady and precise."],
+  ['DFT / design for test', 'Design for test: extra logic added to a chip so that the factory can check each chip it makes. Scan chains, test patterns, memory self-test.'],
+  ['Stuck-at fault / stuck-at / stuck at', 'The simplest model of a manufacturing defect: one wire behaves as if it were tied to 0 (stuck-at-0) or to 1 (stuck-at-1).'],
+  ['Scan flip-flop / scan flop', 'A flip-flop with a 2-to-1 mux in front: in test it can take its value from the flop before it instead of from the logic.'],
+  ['Scan chain', 'Scan flip-flops connected output to input, so in test mode they form one long shift register the tester can load and read.'],
+  ['Scan enable / SE', 'The signal that switches every scan flip-flop from normal use to shifting along its chain.'],
+  ['ATPG', 'Automatic test pattern generation: a tool that finds, for each possible fault, inputs that make a broken chip answer differently from a good one.'],
+  ['Test pattern', 'One set of values shifted into the chains and applied to the inputs, with the answer a good chip must give.'],
+  ['Fault coverage', 'The share of all modelled faults that at least one test pattern catches. Sign-off usually wants 95% or more.'],
+  ['Tester / ATE', 'The machine in the factory that runs the test patterns on every chip and sorts the good ones from the broken ones.'],
+  ['Test mode / test_mode', 'A signal that is 1 only while the chip is on the tester. Logic that would get in the way of test, like an internal reset, is bypassed with it.'],
+  ['DRC', 'Design rule check. In DFT: a check that every flip-flop can be controlled and observed by the tester, for example that no reset comes from inside the chip.'],
+  ['MBIST / memory BIST / BIST', 'Built-in self-test: a small engine on the chip that writes and reads test patterns into a memory at full speed, then reports pass or fail.'],
+  ['March test', 'The usual memory test: walk through every address writing and reading 0s and 1s, up the addresses and then down.'],
+  ['JTAG', "Four or five pins (TCK, TMS, TDI, TDO) that give a tester or a board access to a chip's test logic, even after it is soldered down."],
+  ['Boundary scan', 'A scan chain around the pins of a chip, reached through JTAG, that can check the solder joints of a board pin by pin.']
 ];
-termsSet(GLOSS, ' / ', [['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case'], ['transistors', 'Transistor'], ['pull-ups', 'Pull-up'], ['op-amps', 'Op-amp'], ['ADCs', 'ADC']], []);
+termsSet(GLOSS, ' / ', [['scan chains', 'Scan chain'], ['scan flip-flops', 'Scan flip-flop'], ['test patterns', 'Test pattern'], ['testers', 'Tester'], ['stuck-at-0', 'Stuck-at fault'], ['stuck-at-1', 'Stuck-at fault'], ['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case'], ['transistors', 'Transistor'], ['pull-ups', 'Pull-up'], ['op-amps', 'Op-amp'], ['ADCs', 'ADC']], []);

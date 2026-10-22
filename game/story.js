@@ -1,5 +1,6 @@
-/* Silicon Serf: three weeks, beat by beat.
-   Week 1 is the spec, RTL and verification; week 2 is synthesis, constraints and timing; week 3 is the analog side, at the lab bench with WSL.
+/* Silicon Serf: four weeks, beat by beat.
+   Week 1 is the spec, RTL and verification; week 2 is synthesis, constraints and timing; week 3 is the analog side, at the lab bench with WSL;
+   week 4 is design for test, with JJH: scan, ATPG, a rule your own RTL breaks, memories and JTAG.
    STORY.segs  the days (title card name, subtitle, start time, light). The clock counts minutes from the first Monday 00:00,
                so each day starts 1440 minutes after the one before and still reads 09:00.
                Each scene() sets the whole room, so a saved game resumes on any day looking right.
@@ -15,12 +16,13 @@ const SUBJECTS = [
   ['Verification', [['wave', 2], ['assert', 2], ['cov', 1], ['cover', 2]]],
   ['Synthesis', [['flops', 2], ['synrep', 1], ['latch', 2], ['nolatch', 2]]],
   ['Timing', [['clock', 2], ['indelay', 2], ['setup', 2], ['setupfix', 1], ['hold', 2], ['holdfix', 1]]],
-  ['Analog', [['ohm', 2], ['divider', 2], ['mos', 3], ['nand', 2], ['rise', 2], ['pullup', 2], ['rc', 2], ['filter', 2], ['sync', 2], ['gain', 2], ['amp', 2]]]
+  ['Analog', [['ohm', 2], ['divider', 2], ['mos', 3], ['nand', 2], ['rise', 2], ['pullup', 2], ['rc', 2], ['filter', 2], ['sync', 2], ['gain', 2], ['amp', 2]]],
+  ['Test', [['dftwhy', 2], ['scanff', 2], ['scan', 2], ['ttime', 2], ['atpg', 2], ['rstfix', 2], ['fcov', 2], ['bist', 3]]]
 ];
 const got = s => s[1].reduce((n, m) => n + ((ST.d.p || {})[m[0]] || 0), 0), most = s => s[1].reduce((n, m) => n + m[1], 0);
 const score = () => SUBJECTS.reduce((n, s) => n + got(s), 0), SCORE_MAX = SUBJECTS.reduce((n, s) => n + most(s), 0);
 
-/* The room on a given day: where KT is (his office unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu) */
+/* The room on a given day: where KT is (the office upstairs unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu; jjh on the test desk) */
 function room(o) {
   W.show('kt', true); W.put('kt', o.kt || 'ceo');
   W.tower('reg', o.reg || 'off');
@@ -30,9 +32,12 @@ function room(o) {
   W.screen('fpga', o.fpga || ['FPGA', 'no bitstream'], o.fpgaC || '#93a9b2');
   W.screen('scope', o.scope || ['‾\\_/‾\\_/‾'], '#ffd36a');
   W.screen('psu', o.psu || ['3.30 V', '0.02 A'], '#ff9e64');
+  W.screen('jjh', o.jjh || ['ATPG', 'idle'], o.jjhC || '#93a9b2');
 }
 /* Week 3: the block has signed off, everything at the desks is green */
 const WEEK3 = o => room(Object.assign({reg: 'green', skg: ['regression', 'PASS 48/48'], jjy: ['timing', 'MET ✓']}, o));
+/* Week 4: the board works too; what changes is JJH's screen */
+const WEEK4 = o => WEEK3(Object.assign({fpga: ['EVB', 'all OK ✓'], fpgaC: '#7fe3c8', skg: ['board test', 'PASS 12/12']}, o));
 
 STORY.segs = {
   mon: {name: 'Week 1 · Monday', sub: 'A badge, a laptop, and a spec to read.', t: day(0), mood: 'day',
@@ -64,7 +69,17 @@ STORY.segs = {
   thu3: {name: 'Week 3 · Thursday', sub: 'One press, four counts.', t: day(17), mood: 'day',
     scene() {WEEK3({fpga: ['capture', 'count 4/1'], fpgaC: '#ff8a7a', scope: ['_|‾|_|‾‾‾‾'], skg: ['board test', 'FAIL capture'], skgC: '#ff8a7a'})}},
   fri3: {name: 'Week 3 · Friday', sub: 'A gain of three, then the whole board.', t: day(18), mood: 'day',
-    scene() {WEEK3({fpga: ['light', '0.28 V'], fpgaC: '#ffc94a', skg: ['board test', 'PASS 11/12']})}}
+    scene() {WEEK3({fpga: ['light', '0.28 V'], fpgaC: '#ffc94a', skg: ['board test', 'PASS 11/12']})}},
+  mon4: {name: 'Week 4 · Monday', sub: 'A chip you cannot test is a chip you cannot sell.', t: day(21), mood: 'day',
+    scene() {WEEK4({jjh: ['tape-out db', 'apb_regs ✓'], jjhC: '#7fe3c8'})}},
+  tue4: {name: 'Week 4 · Tuesday', sub: 'Two thousand flip-flops in a few long lines.', t: day(22), mood: 'day',
+    scene() {WEEK4({jjh: ['scan insert', '4 chains']})}},
+  wed4: {name: 'Week 4 · Wednesday', sub: 'Finding the input that catches the fault.', t: day(23), mood: 'day',
+    scene() {WEEK4({jjh: ['ATPG', 'running…'], jjhC: '#ffc94a'})}},
+  thu4: {name: 'Week 4 · Thursday', sub: 'A rule violation, in your own code.', t: day(24), mood: 'day',
+    scene() {WEEK4({jjh: ['DRC', 'S29 ×32'], jjhC: '#ff8a7a'})}},
+  fri4: {name: 'Week 4 · Friday', sub: 'Memories, pins, and the last sign-off.', t: day(25), mood: 'day',
+    scene() {WEEK4({jjh: ['ATPG', 'cov 97.0% ✓'], jjhC: '#7fe3c8', mine: ['pushed', 'test_mode fix']})}}
 };
 
 STORY.beats = [
@@ -340,9 +355,78 @@ STORY.beats = [
       ['kt', 'Three weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, and wired up the board it lives on.']].concat(got(SUBJECTS[5]) >= 18
       ? [['kt', 'WSL says you got most of the analog right the first time. Most digital engineers never even look at the other side of the pin.']]
       : [['kt', 'WSL says the analog side made you sweat. Good. Most digital engineers never even look at the other side of the pin.']])
-      .concat([['kt', 'Next: the timer itself. Go home. Rest. Nanoseconds are tiring, and microamps are worse.']])},
-  {seg: 'fri3', end: true, t: day(18, 1050),
-    lines: () => [['sys', 'Three weeks. One block, from spec to sign-off, and the board it lives on. Next: the timer itself.']]}
+      .concat([['kt', 'One more week before your block is really done. On Monday JJH from test wants it: the factory has to be able to check every chip made from it.'],
+        ['kt', 'Go home. Rest. Nanoseconds are tiring, and microamps are worse.']])},
+
+  /* ═════════ Week 4 · Monday: why every chip is tested ═════════ */
+  {seg: 'mon4', to: 'jjh', guide: 'Meet JJH, the desk in the middle',
+    lines: () => [['jjh', "Hi, I'm JJH. Design for test: DFT. Mine is the desk in the middle you have been walking around for three weeks."],
+      ['jjh', 'Your block is in the tape-out database. In a few months the factory makes a hundred thousand chips from it, and some of them will be broken.'],
+      ['jjh', 'Not your design: the silicon. A speck of dust, a thin wire, a missing contact. My job is to make sure we can catch every broken chip before a customer does.']],
+    mini: miniDftWhy,
+    post: () => PTS().dftwhy === 2
+      ? [['jjh', 'Exactly. SKG proves the design is right; I prove each chip was made right. Different questions, and we need both.']]
+      : [['jjh', 'Verification asks: is the design right? Test asks: was this one chip made right? A perfect design still comes back with broken chips.']]},
+  {seg: 'mon4', to: 'mydesk', guide: 'Write a scan flip-flop',
+    lines: () => [['jjh', 'The tester cannot reach a flip-flop deep inside the chip. So we give every flop a back door. I sent you the file; it is one line.']],
+    mini: done => codeTask(T_SCANFF, done),
+    post: () => [['jjh', 'That is a scan flop. Synthesis swaps every flop in your block for one of these; you never write it by hand again.']]},
+
+  /* ═════════ Week 4 · Tuesday: the scan chain ═════════ */
+  {seg: 'tue4', to: 'jjh', guide: 'Ask JJH how the flops are chained',
+    lines: () => [['jjh', 'One scan flop is a party trick. The trick is to chain them: the Q of one into the SI of the next.'],
+      ['jjh', 'With SE at 1 the whole chip is one long shift register. The tester shifts a pattern in, drops SE for one clock so the logic captures its answer, then shifts the answer out.'],
+      ['jjh', 'Wire me a small one. Four flops.']],
+    mini: done => wireTask(T_SCAN, done),
+    post: () => [['jjh', 'The tools do the same for two thousand flops, and pick the order by where the flops sit on the chip, to keep the wires short.']],
+    after() {if (W) W.screen('jjh', ['scan chains', '4 × 500'], '#7fe3c8')}},
+  {seg: 'tue4', to: 'mydesk', guide: 'Work out how long the test takes',
+    lines: () => [['jjh', 'Every second on the tester costs money, for every chip. Work out how long your block takes with four chains.']],
+    mini: done => codeTask(T_TTIME, done),
+    post: () => [['jjh', 'A tenth of a second. Times a hundred thousand chips, that is almost three hours of tester time. Now you know why I count cycles.']]},
+
+  /* ═════════ Week 4 · Wednesday: ATPG by hand ═════════ */
+  {seg: 'wed4', to: 'jjh', guide: 'See how ATPG finds a test',
+    lines: () => [['jjh', 'ATPG: automatic test pattern generation. For every possible fault, the tool looks for inputs that make a broken chip answer differently from a good one.'],
+      ['jjh', 'Two steps every time. Activate: drive the faulty wire to the opposite of what it is stuck at. Propagate: set the other inputs so the difference reaches an output.'],
+      ['jjh', 'The tool does it a million times a night. Do it twice, by hand.']],
+    mini: done => atpgTask(T_ATPG, done),
+    post: () => [['jjh', 'That is all ATPG does, very fast, for every wire in the chip and both kinds of stuck-at.'],
+      ['jjh', 'I ran it on your block last night: fault coverage 91%. The target is 95. And there is one rule violation, in your code. Tomorrow.']],
+    after() {if (W) W.screen('jjh', ['ATPG', 'cov 91.0%'], '#ffc94a')}},
+
+  /* ═════════ Week 4 · Thursday: a DFT violation in your RTL ═════════ */
+  {seg: 'thu4', to: 'kln', guide: "KLN has read JJH's report",
+    lines: () => [['kln', 'JJH sent me the DRC report. Rule S29: your timer counter is reset by a signal from inside the chip. That is the soft reset the firmware team asked for last week; I added it as CTRL bit 7.'],
+      ['kln', 'In the product it is fine. On the tester it breaks everything. Hear it from JJH, then fix it. Your block, your fix.']]},
+  {seg: 'thu4', to: 'jjh', guide: 'Hear the problem from JJH',
+    lines: () => [['jjh', 'During shift every flop holds whatever bit is passing through. When a 1 passes through CTRL bit 7, your soft reset fires and clears the whole counter in the middle of my pattern.'],
+      ['jjh', 'So ATPG gives up on those 32 flops and everything behind them. That is most of your missing coverage.'],
+      ['jjh', 'The rule is simple: in test mode, resets come only from the reset pin. Every block gets a test_mode signal for exactly this.']],
+    mini: done => codeTask(T_RSTFIX, done),
+    post: () => [['jjh', 'One mux. Push it and I will rerun ATPG right now.']],
+    after() {if (W) W.screen('mine', ['pushed', 'test_mode fix'], '#7fe3c8')}},
+  {seg: 'thu4', to: 'jjh', guide: 'Read the new ATPG result',
+    lines: () => [['sys', 'JJH reruns ATPG on your fixed block. The report scrolls past: patterns, faults, detected.']],
+    mini: done => codeTask(T_FCOV, done),
+    post: () => [['jjh', 'Ninety-seven. Your block passes test sign-off. I am adding you to my short list of designers who do not argue with DRC reports.']],
+    after() {if (W) W.screen('jjh', ['ATPG', 'cov 97.0% ✓'], '#7fe3c8')}},
+
+  /* ═════════ Week 4 · Friday: memories, pins, and KT ═════════ */
+  {seg: 'fri4', to: 'jjh', guide: 'One last lesson from JJH',
+    lines: () => [['jjh', 'Scan covers the logic. Two more things before a chip is testable: its memories, and its pins.'],
+      ['jjh', 'Memories test themselves, with a small engine on the chip called MBIST. And the tester reaches all of it through a handful of pins called JTAG.']],
+    mini: miniBist,
+    post: () => [['jjh', 'That is DFT. Nobody notices it when it works, and everybody notices the one broken chip that escaped.']],
+    after() {if (W) W.walk('kt', 'jjhV')}},
+  {seg: 'fri4', to: 'kt', guide: 'KT came down to see you',
+    lines: () => [['kt', 'Four weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, wired up its board and made it testable.']].concat(got(SUBJECTS[6]) >= 13
+      ? [['kt', 'JJH says you found faults faster than the tool does. JJH never says things like that.']]
+      : [['kt', 'JJH says you argued with nobody and fixed everything. That is the job.']])
+      .concat([['kt', 'The masks are ordered. In twelve weeks the first wafers come back, and every chip on them will go through the test you helped build.'],
+        ['kt', 'Go home. Rest. On Monday: the timer itself.']])},
+  {seg: 'fri4', end: true, t: day(25, 1050),
+    lines: () => [['sys', 'Four weeks. One block, from spec to sign-off, the board it lives on, and the test that will check every chip made from it. Next: the timer itself.']]}
 ];
 
 /* Ending card: written from what actually happened */
@@ -351,10 +435,11 @@ STORY.ending = () => {
   const best = SUBJECTS.slice().sort((a, b) => got(b) / most(b) - got(a) / most(a))[0], worst = SUBJECTS.slice().sort((a, b) => got(a) / most(a) - got(b) / most(b))[0];
   return {
     title: r >= .9 ? 'Tape-out material' : r >= .65 ? 'Promising serf' : 'Serf in training',
-    sub: r >= .9 ? 'Your first block and its board, from spec to bench, nearly flawless.' : r >= .65 ? 'Your first block signed off and its board works. A few bruises on the way.' : 'Your first block signed off, its board works, and you learned where every trap is.',
-    led: '3 weeks',
-    tl: [['WEEK 1', 'RTL and verification'], ['WEEK 2', 'Synthesis and timing'], ['WEEK 3', 'Analog and the board']],
-    stats: SUBJECTS.map(x => [x[0], got(x) + ' / ' + most(x)])
+    sub: r >= .9 ? 'Your first block, its board and its test, from spec to sign-off, nearly flawless.' : r >= .65 ? 'Your first block signed off, its board works and every chip can be tested. A few bruises on the way.' : 'Your first block signed off, its board works, it can be tested, and you learned where every trap is.',
+    led: '4 weeks',
+    tl: [['WK 1–2', 'RTL, verification, timing'], ['WK 3', 'Analog and the board'], ['WK 4', 'Design for test']],
+    /* the card shows the first six: the five big subjects and Test; Spec and the review follow */
+    stats: SUBJECTS.slice(1).concat(SUBJECTS.slice(0, 1)).map(x => [x[0], got(x) + ' / ' + most(x)])
       .concat([['Review', ST.d.review === 'explain' ? 'Explained' : ST.d.review === 'ask' ? 'Asked why' : 'Argued']]),
     lines: [
       'Score: ' + s + ' out of ' + SCORE_MAX + '.',
@@ -363,7 +448,7 @@ STORY.ending = () => {
       ST.d.review === 'explain' ? 'KLN approved your RTL on your own explanation.' : ST.d.review === 'ask' ? 'You asked KLN why, and came away knowing the reason behind your own code.' : 'KLN approved your RTL, and reminded you that passing tests are not a reason.',
       ST.d.wait === 'skg' ? 'You watched a regression on your first day, so the red light on Thursday did not scare you.' : 'You read the spec before writing a line, as KLN asked.'
     ],
-    share: 'Silicon Serf: I took my first chip block from spec to sign-off, then wired up the board it lives on. ' + s + ' / ' + SCORE_MAX + '.'
+    share: 'Silicon Serf: I took my first chip block from spec to sign-off, wired up the board it lives on, and made it testable. ' + s + ' / ' + SCORE_MAX + '.'
   };
 };
 
@@ -373,6 +458,7 @@ const CHAT = {
   skg: ['If I find nothing, I worry my tests are too easy.', 'Every bug I find here is one the customer never sees.'],
   qyl: ['If the spec is unclear, tell me. Then it is my bug, not yours.', 'Every register bit has a reason. Ask me about any of them.'],
   jjy: ['Every path has a deadline. Most of them do not know it yet.', 'A nanosecond is about thirty centimetres of light. Chips are small for a reason.'],
+  jjh: ['Every chip gets tested. Every single one.', 'A defect does not care how good your design is.', 'If the tester cannot reach a flip-flop, it might as well not be there.'],
   wsl: ['Everything is analog if you zoom in far enough.', 'A one and a zero are just two voltages we agreed not to argue about.', 'The scope never lies. The probe sometimes does.'],
   kt: ['Go on, the team is waiting for you.', 'My door is always open. It is also made of glass, so I see who walks past it.', 'That wafer on the stand is from our first tape-out. Every die on it worked.']
 };

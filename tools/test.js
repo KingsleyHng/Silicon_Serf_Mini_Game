@@ -40,7 +40,11 @@ const ANSWERS = {
   ohm: '40 kΩ',
   rise: '799 ns',
   rc: '15.9 Hz',
-  gain: '20k'
+  gain: '20k',
+  scanff: '(se & si) | (~se & d)',
+  ttime: '100 ms',
+  rstfix: 'rst_n & (test_mode | !soft_rst)',
+  fcov: '97.0 %'
 };
 /* 拉線題（game/circuit.js 的 wireTask）的正確接法：也故意跟標準答案接得不一樣（電阻對調、換一組值），測「接法不同但電路對就算對」。vals 是下拉選單選第幾個 */
 const WIRES = {
@@ -48,8 +52,11 @@ const WIRES = {
   nand: { wires: [['P2.s', 'VDD.p'], ['P1.s', 'P2.s'], ['Y.p', 'P2.d'], ['P1.d', 'P2.d'], ['N2.d', 'P1.d'], ['N2.s', 'N1.d'], ['N1.s', 'GND.p'], ['P1.g', 'B.p'], ['N2.g', 'B.p'], ['P2.g', 'A.p'], ['N1.g', 'A.p']] },
   pullup: { vals: { R1: 2, R2: 2 }, wires: [['R2.a', 'VDD.p'], ['R1.a', 'R2.a'], ['R2.b', 'DEV.SDA'], ['DEV.SDA', 'MCU.SDA'], ['R1.b', 'DEV.SCL'], ['DEV.SCL', 'MCU.SCL']] },
   filter: { vals: { R1: 2, C1: 1 }, wires: [['BTN.p', 'R1.b'], ['R1.a', 'C1.b'], ['C1.a', 'GND.p'], ['IN.p', 'R1.a']] },
-  amp: { vals: { R1: 1, R2: 2 }, wires: [['VIN.p', 'U1.p'], ['OUT.p', 'U1.o'], ['R2.b', 'U1.o'], ['R2.a', 'U1.m'], ['R1.b', 'U1.m'], ['R1.a', 'GND.p']] }
+  amp: { vals: { R1: 1, R2: 2 }, wires: [['VIN.p', 'U1.p'], ['OUT.p', 'U1.o'], ['R2.b', 'U1.o'], ['R2.a', 'U1.m'], ['R1.b', 'U1.m'], ['R1.a', 'GND.p']] },
+  scan: { wires: [['SCAN_IN.p', 'SFF2.SI'], ['SFF2.Q', 'SFF1.SI'], ['SFF1.Q', 'SFF4.SI'], ['SFF4.Q', 'SFF3.SI'], ['SFF3.Q', 'SCAN_OUT.p'], ['SE.p', 'SFF1.SE'], ['SE.p', 'SFF2.SE'], ['SE.p', 'SFF3.SE'], ['SE.p', 'SFF4.SE']] }
 };
+/* 找故障題（game/dft.js 的 atpgTask）：每個故障一組抓得到的輸入（A B C D），也跟標準答案不一樣 */
+const ATPG = { atpg: ['1101', '1010'] };
 /* 接一塊板子：先選值，再一根一根接（點一個腳、再點另一個腳） */
 const wireUp = async (pg, w) => {
   for (const k of Object.keys(w.vals || {})) await pg.selectOption('select[data-part="' + k + '"]', String(w.vals[k]));
@@ -98,6 +105,16 @@ async function play(br, o) {
       if (!(await pg.$('.wb .wire'))) await wireUp(pg, JSON.parse(await pg.getAttribute('.task', 'data-wrong')));
       await click('#wireRun'); await pg.waitForTimeout(50);
       if (await vis('#fb .fb-err')) { errors.push('the wrong board for ' + task + ' is not complete: ' + (await pg.textContent('#fb')).slice(0, 200)); break }
+      continue;
+    }
+    if (await vis('#atpgRun')) {   /* 找故障題：第一輪照 ATPG 設輸入；第二輪用 data-wrong 那組（抓不到）按三次，再按「看答案」 */
+      if (await vis('#next')) { await click('#next'); log.push('next'); continue }
+      const task = await pg.getAttribute('.task', 'data-task'), f = +(await pg.getAttribute('.task', 'data-fault'));
+      if (await vis('#reveal')) { await click('#reveal'); log.push('reveal:' + task); continue }
+      const want = o.last ? await pg.getAttribute('.task', 'data-wrong') : ATPG[task][f];
+      for (const b of await pg.$$('.atpg-in')) { const i = await b.evaluate(e => [...e.parentNode.querySelectorAll('.atpg-in')].indexOf(e)); if ((await b.getAttribute('data-v')) !== want[i]) await b.click() }
+      await click('#atpgRun'); log.push((o.last ? 'nocatch:' : 'atpg:') + task + f); await pg.waitForTimeout(50);
+      if (!o.last && !(await vis('#next'))) { errors.push('inputs for ' + task + ' fault ' + f + ' were not accepted: ' + (await pg.textContent('#fb')).slice(0, 200)); break }
       continue;
     }
     if (await vis('#panel .qz')) {   /* 小測驗：每一題還沒選的，第一輪選第一個答案、第二輪選最後一個 */

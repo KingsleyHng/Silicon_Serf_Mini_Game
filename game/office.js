@@ -1,6 +1,6 @@
 /* The office of KT Silicon Labs: a bright two-storey office in pixel style (16 pixels per metre, like the people's skins).
    Downstairs, back wall left to right: the RTL lead's desk, the verification desk, the logo on a blue wall, the FPGA lab with server racks.
-   Front: your desk and JJY's. Right: the pantry, the front door, a sofa by the door.
+   In the middle: JJH's desk (test). Front: your desk and JJY's. Right: the pantry, the front door, a sofa by the door.
    Upstairs: a mezzanine along the left wall, 3 m up, reached by the stairs beside it: the meeting room at the back, KT's glass office at the front.
    Under the mezzanine: the server room and the washrooms (closed). The back and left walls are two storeys high, with a band of high windows.
    Coordinates: x to the right, z toward the camera (down the screen), y up; 1 unit is about 1 metre. */
@@ -12,6 +12,7 @@ const SEATS = {
   jjy: {node: 'jjy', at: [2.65, 3.2], face: Math.PI},
   qyl: {node: 'qyl', at: [-7.45, -3.95], face: -Math.PI / 2},
   wsl: {node: 'wsl', at: [5, -4.55], face: Math.PI},
+  jjh: {node: 'jjh', at: [-.35, -.3], face: Math.PI},
   kt: {node: 'ceo', at: [-7.3, 1.95], face: 0, drop: .14}
 };
 Object.keys(SEATS).forEach(id => {WORLD.cast[id].seat = SEATS[id]});
@@ -344,6 +345,11 @@ levelAdd('office', function (K) {
   [-5.65, -4.45].forEach(z => {box(.75, 2.2, 1.05, M.dark, 8.55, 1.1, z, G); box(.02, 2, .9, W.rack, 8.16, 1.1, z, G, false)});
   label('LAB', 6, -3.5, 1.6, G);
 
+  /* JJH's desk in the middle of the floor: design for test */
+  flat(2.8, 2.2, W.carpet, 0, .004, -.85, 1, G);
+  workstation(0, -1.1, 'jjh', ['ATPG', 'idle'], '#93a9b2', 'jjh2', ['scan.def', '4 chains'], '#7fe3c8');
+  chair(-.35, -.3, Math.PI);
+
   /* Your desk, front left, and JJY's next to it: synthesis and timing */
   workstation(-.4, 2.4, 'mine', ['login:', '_'], '#93a9b2', 'mine2', ['spec.pdf', 'APB v2'], '#93a9b2');
   chair(-.75, 3.2, Math.PI);
@@ -381,7 +387,7 @@ levelAdd('office', function (K) {
     [-9, -6.5, .76, .84], [-5, -4.4, .76, .84], [-8.25, -6.35, 2.6, 3.5], [-8.1, -6.5, 3.8, 4.3], [-9, -8.6, 4.3, 5.9], [-5.65, -5.35, 5.3, 5.6], [-8.8, -8.3, 1, 1.5],
     [-4.2, -3.5, -2.9, -2.3], [-4.1, -3.6, -6, -5.5], [3, 3.5, -6, -5.55],
     [-3.2, -1.2, -5.85, -4.95], [.8, 2.8, -5.85, -4.95], [4.5, 7.5, -6.2, -4.9], [8.1, 9, -6.2, -3.9],
-    [-1.4, .6, 1.95, 2.85], [2, 4, 1.95, 2.85], [8, 9, -3.1, .7], [5.75, 6.45, -2.65, -1.95],
+    [-1, 1, -1.55, -.65], [-1.4, .6, 1.95, 2.85], [2, 4, 1.95, 2.85], [8, 9, -3.1, .7], [5.75, 6.45, -2.65, -1.95],
     [8.3, 9, 4.35, 5.95], [7.05, 7.85, 4.95, 5.45], [4.35, 4.85, 5.3, 5.8], [8.3, 8.8, 1.05, 1.55]
   ]);
   /* Where people stand, and how they can walk between those points (in straight lines, so each line must be clear).
@@ -391,10 +397,10 @@ levelAdd('office', function (K) {
     kln: [-1.35, -4.25], skg: [2.6, -4.25], lab: [5.2, -4], wsl: [4.3, -3.95], front: [1.3, 4.4], mine: [-.4, 3.8], jjy: [3.85, 3.55],
     pantry: [7, -.6], pantry2: [6.8, .5], frontL: [-2, 5.3], stBot: [-3.5, 5.4],
     stTop: [-3.5, -.6], up2: [-5.75, -.6], meet: [-5.75, -1.6], qyl: [-6.8, -3.9], ceodoor: [-5.75, .2], ceo: [-6.3, 1.65], cooler: [-7.9, .3],
-    klnV: [-3.4, -3.8], skgV: [.4, -3.7], jjyV: [1.5, 3.8], wslV: [5.9, -3.6], qylV: [-6.4, -3.1], ktV: [-5.7, 2.6]
+    jjh: [.85, .05], jjhV: [-1.3, .15], klnV: [-3.4, -3.8], skgV: [.4, -3.7], jjyV: [1.5, 3.8], wslV: [5.9, -3.6], qylV: [-6.4, -3.1], ktV: [-5.7, 2.6]
   }, 'outside-door door-lobby lobby-start door-start start-center center-aisle aisle-kln aisle-skg center-lab lab-wsl center-wsl start-front front-mine front-jjy ' +
     'center-pantry center-pantry2 pantry-pantry2 aisle-mid mid-frontL front-frontL frontL-stBot stBot-stTop stTop-up2 up2-meet meet-qyl up2-ceodoor ceodoor-ceo up2-cooler ' +
-    'aisle-klnV aisle-skgV front-jjyV lab-wslV meet-qylV ceodoor-ktV');
+    'center-jjh mid-jjhV aisle-klnV aisle-skgV front-jjyV lab-wslV meet-qylV ceodoor-ktV');
   /* Home-screen camera shots */
   WORLD.shots = [{p: [-2, 1.2, -4.4], d: 14, yaw: .3, pitch: .6}, {p: [2, 1.5, 0], d: 20, yaw: -.3, pitch: .7}, {p: [-6.5, UP + 1, 3], d: 11, yaw: .45, pitch: .7}];
 });

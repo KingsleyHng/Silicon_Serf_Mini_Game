@@ -3,7 +3,7 @@
    walks straight back, so the story always finds people where it expects them. Runs on MOVE.after (every 0.2 s) and uses only W. */
 const LIFE = {
   /* Where a visitor stands next to each person's desk (nodes in office.js), and the break spots: [node, [x, z] to look at] */
-  visit: {kln: 'klnV', skg: 'skgV', jjy: 'jjyV', wsl: 'wslV', qyl: 'qylV', kt: 'ktV'},
+  visit: {kln: 'klnV', skg: 'skgV', jjy: 'jjyV', wsl: 'wslV', jjh: 'jjhV', qyl: 'qylV', kt: 'ktV'},
   breaks: [['pantry', [8.6, -1.4]], ['pantry2', [8.6, .2]], ['cooler', [-8.6, .45]]],
   /* What people say when they get to a colleague, what the colleague answers, and what they say on a break */
   ask: {
@@ -11,6 +11,7 @@ const LIFE = {
     skg: ['The nightly run finished. Want the summary?', 'Did you touch the testbench?', 'Coverage went up again.'],
     jjy: ['Who changed the clock constraints?', 'Your netlist is 3% smaller now.', 'Hold slack looks fine today.'],
     wsl: ['Has anyone seen my scope probe?', 'The board needs another pull-up.', 'Coffee first, then the ADC.'],
+    jjh: ['Did anyone touch the scan settings?', 'Coverage went up two points overnight.', 'Is that memory on the BIST list?'],
     qyl: ['I updated the spec. Again.', 'Quick question about the bus.', 'Can I borrow you for five minutes?'],
     kt: ['How is everyone doing?', 'Anything blocking you?', 'Good work this week.']
   },

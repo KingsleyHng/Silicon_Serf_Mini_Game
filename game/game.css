@@ -76,3 +76,10 @@
 .vals label{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;font-weight:600}
 .vals select{font:inherit;font-weight:400;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
 .vals select:disabled{opacity:.6}
+
+/* Finding a test by hand (dft.js): the fault in red, the inputs as toggles under the board */
+.wb .fault{fill:none;stroke:#ff6b6b;stroke-width:3;stroke-linecap:round}
+.wb text.flt{fill:#ff8a7a;font-weight:700}
+.atpg-ins{flex-wrap:wrap;gap:8px}
+.atpg-in{font-family:var(--font-mono);min-width:64px}
+.atpg-in[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-edge)}

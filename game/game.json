@@ -1,7 +1,7 @@
 {
   "key": "siliconserf",
   "title": "Silicon Serf",
-  "description": "Your first three weeks as a chip front-end engineer at KT Silicon Labs: read the spec, type real Verilog, write assertions, hunt latches, write timing constraints, fix setup and hold violations, then wire up the analog circuits on the board.",
+  "description": "Your first four weeks as a chip front-end engineer at KT Silicon Labs: read the spec, type real Verilog, write assertions, hunt latches, write timing constraints, fix setup and hold violations, wire up the analog circuits on the board, then make the chip testable with scan chains and ATPG.",
   "lang": "en",
   "src": [
     "data.js",
@@ -11,6 +11,7 @@
     "check.js",
     "minis.js",
     "circuit.js",
+    "dft.js",
     "story.js",
     "life.js"
   ],

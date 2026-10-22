@@ -302,7 +302,7 @@ function sdcCheck(task, text) {
 
 /* ── Numbers: within a small tolerance. task.near = [[value, message], …] for common slips ── */
 function numCheck(task, text) {
-  const t = text.trim().replace(/\s*[A-Za-zΩµμ]+$/, '').replace(/−/g, '-');   // a unit after the number is fine: 0.40 ns, 40 kΩ, 15.9 Hz
+  const t = text.trim().replace(/\s*([A-Za-zΩµμ]+|%)$/, '').replace(/−/g, '-');   // a unit after the number is fine: 0.40 ns, 40 kΩ, 15.9 Hz, 97 %
   if (!/^[-+]?(\d+(\.\d*)?|\.\d+)$/.test(t)) return {err: 'type a number' + (task.unit ? ' (in ' + task.unit + ')' : '')};
   const v = parseFloat(t), tol = task.tol || 1e-6;
   if (Math.abs(v - task.value) <= tol) return {ok: true};
