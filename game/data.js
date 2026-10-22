@@ -3,7 +3,7 @@
 
 /* Home screen */
 HOME.title = 'Silicon Serf';
-HOME.sub = 'Your first two weeks as a chip front-end engineer';
+HOME.sub = 'Your first three weeks as a chip front-end engineer';
 HOME.fine = 'A story game made with the fab24hr engine. KT Silicon Labs and everyone in it are fictional.';
 HOME.support = null;
 
@@ -16,6 +16,7 @@ STORY.cast = {
   skg: {name: 'SKG', role: 'Verification engineer', tag: 'DV', color: '#2b8a57', about: 'Writes the testbenches that try to break your design. Finding your bug is the job, not a personal attack.'},
   qyl: {name: 'QYL', role: 'Chip architect', tag: 'ARCH', color: '#7a4bb3', about: 'Wrote the spec for the peripheral block you are building. Knows why every register bit exists.'},
   jjy: {name: 'JJY', role: 'Synthesis and timing engineer', tag: 'STA', color: '#c0621d', about: 'Turns RTL into gates and makes sure every path in the chip is fast enough, and not too fast. Speaks fluent nanoseconds.'},
+  wsl: {name: 'WSL', role: 'Analog design engineer', tag: 'AMS', color: '#0f7f80', about: 'Designs the parts of the chip that are not ones and zeros: the reference, the ADC, the pads. Lives at the lab bench, next to a soldering iron and an oscilloscope.'},
   kt: {name: 'KT', role: 'CEO', tag: 'CEO', color: '#b2382f', about: 'Founded KT Silicon Labs. Still walks the floor every week and remembers everyone\'s first block.'},
   marvin: {name: 'Marvin', role: 'IT support, on the phone', tag: 'IT', color: '#55616b', about: 'Sets up accounts, licences and laptops. Mostly heard, rarely seen.'}
 };
@@ -25,7 +26,8 @@ WORLD.cast = {
   skg: {label: 'SKG · Verification', fill: '#2b8a57', ink: '#ffffff', cloth: 0x4f6b3a, color: 0x2b8a57, hair: 0x3a2618, node: 'skg', face: 0},
   qyl: {label: 'QYL · Architect', fill: '#7a4bb3', ink: '#ffffff', cloth: 0x6b5a7a, color: 0x7a4bb3, hair: 0x14100e, long: true, node: 'qyl', face: 0},
   jjy: {label: 'JJY · Synthesis & timing', fill: '#c0621d', ink: '#ffffff', cloth: 0x7a4a2a, color: 0xc0621d, hair: 0x241a12, node: 'jjy', face: 0},
-  kt: {label: 'KT · CEO', fill: '#b2382f', ink: '#ffffff', cloth: 0x22262b, color: 0xb2382f, hair: 0x2a2a2a, node: 'lobby', face: -Math.PI / 2}
+  wsl: {label: 'WSL · Analog design', fill: '#0f7f80', ink: '#ffffff', cloth: 0x2f6f70, color: 0x0f7f80, hair: 0x1c1410, node: 'wsl', face: Math.PI},
+  kt: {label: 'KT · CEO', fill: '#b2382f', ink: '#ffffff', cloth: 0x22262b, color: 0xb2382f, hair: 0x2a2a2a, node: 'ceo', face: 0}
 };
 
 /* Places you walk to (not people). at = where you stand to use it; mark = where the "!" floats. */
@@ -88,6 +90,29 @@ const GLOSS = [
   ['Merge / merged', 'Adding your change to the team\'s shared code, so everyone builds on it.'],
   ['FPGA', 'A chip whose logic can be reprogrammed. Teams load their design onto one to try it at real speed long before the real chip exists.'],
   ['Bitstream', 'The file that programs an FPGA with your design.'],
-  ['Tape-out', 'Sending the finished design to the factory to be made. After it, mistakes cost months and millions.']
+  ['Tape-out', 'Sending the finished design to the factory to be made. After it, mistakes cost months and millions.'],
+  ['Analog', 'Circuits that work with continuous voltages and currents instead of ones and zeros: references, amplifiers, converters, the pads where the chip meets the board.'],
+  ['Evaluation board / EVB', 'A circuit board made to try a new chip in real conditions: a battery, sensors, buttons, connectors.'],
+  ['ADC', 'Analog-to-digital converter: measures a voltage and turns it into a number the logic can read. Anything above its full-scale voltage reads as the maximum.'],
+  ["Ohm's law", 'V = I × R: the voltage across a resistor is the current through it times its resistance.'],
+  ['Voltage divider / divider', 'Two resistors in series. The point between them sits at a fixed fraction of the voltage across both: R2 / (R1 + R2).'],
+  ['Transistor', 'The switch every chip is built from. A modern chip has billions of them.'],
+  ['NMOS', 'A transistor that conducts when its gate is 1. Good at pulling a node down to ground.'],
+  ['PMOS', 'A transistor that conducts when its gate is 0. Good at pulling a node up to VDD.'],
+  ['CMOS', 'Logic built from PMOS switches to VDD and NMOS switches to ground. For every input exactly one side conducts, so almost no current flows while nothing changes.'],
+  ['VDD', 'The positive supply voltage of a chip or a board.'],
+  ['I²C / I2C', 'A two-wire bus, SDA for data and SCL for the clock, that chips on a board use to talk to sensors and other small parts.'],
+  ['Open drain / open-drain', 'An output that can only pull a line low or let go of it. Something else, a pull-up resistor, has to bring the line back up.'],
+  ['Pull-up / pull-up resistor', 'A resistor from a line to VDD that holds the line at 1 whenever nothing pulls it low.'],
+  ['Rise time', 'How long a signal takes to go from low to high, usually measured between 30% and 70%, or 10% and 90%, of the swing.'],
+  ['Contact bounce / bounce', 'When a mechanical button closes, its contacts bounce apart and together for a few milliseconds, so one press looks like several.'],
+  ['Low-pass filter', 'A circuit that lets slow changes through and smooths away fast ones. A resistor in series and a capacitor to ground is the simplest one.'],
+  ['Time constant', 'R × C, written τ: roughly how long an RC circuit takes to follow a change. After one time constant it has gone 63% of the way.'],
+  ['Cutoff frequency', 'The frequency where a filter starts to cut: 1 / (2π × R × C) for an RC filter.'],
+  ['Schmitt trigger', 'An input with two thresholds, a higher one for rising and a lower one for falling, so a slow or noisy edge switches it only once.'],
+  ['Synchronizer', 'Two flip-flops in a row on the receiving clock. A signal from outside that clock may leave the first one metastable; the second gives it a whole cycle to settle.'],
+  ['Metastable / metastability', 'What a flip-flop does when its input changes right at the clock edge: its output can hover between 0 and 1 for a while before it settles.'],
+  ['Op-amp / operational amplifier', 'An amplifier with a + and a − input and a huge gain. With feedback to the − input, it moves its output until both inputs are at the same voltage.'],
+  ['Feedback', "Taking part of a circuit's output back to its input. Negative feedback, to the − input, makes an amplifier steady and precise."]
 ];
-termsSet(GLOSS, ' / ', [['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case']], []);
+termsSet(GLOSS, ' / ', [['registers', 'Register'], ['testbenches', 'Testbench'], ['waveforms', 'Waveform'], ['interrupts', 'Interrupt'], ['IRQs', 'IRQ'], ['specs', 'Spec'], ['FPGAs', 'FPGA'], ['latches', 'Latch'], ['assertions', 'Assertion'], ['netlists', 'Netlist'], ['timing paths', 'Timing path'], ['corner cases', 'Corner case'], ['transistors', 'Transistor'], ['pull-ups', 'Pull-up'], ['op-amps', 'Op-amp'], ['ADCs', 'ADC']], []);

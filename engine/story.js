@@ -139,7 +139,7 @@ DLG.who=id=>{
 DLG.present=id=>id!=='me'&&!!W&&W.has(id);
 DLG.line=id=>{if(!W||!DLG.present(id))return;const s=W.snap(),me=s.me,o=s[id],far=Math.hypot(o[0]-me[0],o[1]-me[1]),d=matchMedia('(min-width:860px)').matches?15:17;
   if(far>9)W.focus([me[0],1.2,me[1]],d);else W.focus([(me[0]+o[0])/2,1.2,(me[1]+o[1])/2],d+far*.6)};   /* 鏡頭靠近：對準你和說話的人中間 */
-DLG.end=()=>{if(W)W.focus(null)};
+DLG.end=()=>{if(W){W.focus(null);W.up(null)}};   /* 講完：鏡頭拉回，站起來講話的人坐回去 */
 MOVE.can=()=>ST.on&&!busy&&panelEl.hidden&&sysEl.hidden&&tcard.hidden&&dlg.hidden&&endEl.hidden&&!MOVE.cover()&&!MOVE.page();
 MOVE.near=()=>{
   const s=W.snap(),b=curBeat(),tgt=b&&b.to&&(!b.ring||ST.rung===ST.q)?b.to:null;let near=null,best=2.6;

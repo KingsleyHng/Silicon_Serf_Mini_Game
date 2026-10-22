@@ -4,6 +4,8 @@
      WORLD.cast[id]={label,fill,ink,cloth,color,hair,long,node,face,speed,hidden}
         場景裡的人。'me' 是玩家。label 是頭上的名牌；fill／ink 名牌底色與字色；cloth 衣服、color 名牌色塊、hair 頭髮（0xRRGGBB）；
         node 一開始站的點；face 面向（弧度）；hidden 一開始不在場（W.show(id,true) 才出現）。
+        make 自己做身體（不用方塊人）：make(K) 回傳 {body,legL,legR,armL,armR,head,tag}（見 makeChar）。
+        seat 座位 {node,at:[x,z],face,drop}：人停在 node 這個點、沒被叫起來（W.up）的時候，坐到 at（面向 face，身體往下 drop，預設 .1）打字。
      WORLD.level   一開始就蓋的關卡（levelAdd(名字, build) 登記的那一個）
      WORLD.shots   主頁背景的幾個鏡頭 [{p:[x,y,z],d:距離,yaw,pitch},…]
      WORLD.items[kind]=(g,K)=>{…}   撿得到的東西長什麼樣子（沒有登記的只有一顆閃光）
@@ -158,15 +160,21 @@ function initWorld(){
     return [f,f,f,f,new T.MeshLambertMaterial({map:front}),f]}
   function makeChar(id,o){
     const g=new T.Group(),cloth=lam(o.cloth!=null?o.cloth:0x4a5a63),pants=lam(o.pants!=null?o.pants:0x3b4750);
+    let legL,legR,armL,armR,head,tagY=2.4;
+    if(o.make){   /* 遊戲自己做的身體：o.make(K) 回傳 {body,legL,legR,armL,armR,head,tag}，前六個各是一個 Group；四肢的原點放在髖／肩（走路時繞 x 軸擺），head 的原點放在脖子；tag 是名牌的高度（預設 2.4） */
+      const b=o.make(LVK);[b.body,b.legL,b.legR,b.armL,b.armR,b.head].forEach(x=>x&&g.add(x));({legL,legR,armL,armR,head}=b);if(b.tag)tagY=b.tag;
+      g.traverse(m=>{if(m.isMesh)m.castShadow=true})}
+    else{
     function limb(x,y,m){const p=new T.Group();p.position.set(x,y,0);const b=new T.Mesh(new T.BoxGeometry(.24,.72,.24),m);b.position.y=-.3;b.castShadow=true;p.add(b);g.add(p);return p}
-    const legL=limb(-.12,.66,pants),legR=limb(.12,.66,pants),armL=limb(-.36,1.38,cloth),armR=limb(.36,1.38,cloth);
+    legL=limb(-.12,.66,pants);legR=limb(.12,.66,pants);armL=limb(-.36,1.38,cloth);armR=limb(.36,1.38,cloth);
     const torso=new T.Mesh(new T.BoxGeometry(.48,.72,.24),torsoMats(o));torso.position.y=1.08;torso.castShadow=true;g.add(torso);
-    const head=new T.Mesh(new T.BoxGeometry(.48,.48,.48),headMats(o));head.position.y=1.68;head.castShadow=true;g.add(head);
-    const tag=plate(o.label||id,o.fill||'#33454f',o.ink||'#ffffff');tag.position.set(0,2.4,0);g.add(tag);g.userData.tag=tag;
+    head=new T.Mesh(new T.BoxGeometry(.48,.48,.48),headMats(o));head.position.y=1.68;head.castShadow=true;g.add(head);
+    }
+    const tag=plate(o.label||id,o.fill||'#33454f',o.ink||'#ffffff');tag.position.set(0,tagY,0);g.add(tag);g.userData.tag=tag;
     const pk=box(.9,2.1,.9,M.hidden,0,1.05,0,g,false);pk.userData.pick=id;pickables.push(pk);
     scene.add(g);
     const node=o.node&&NODES[o.node]?o.node:Object.keys(NODES)[0];
-    const ch={id,g,legL,legR,armL,armR,head,path:[],node,home:node,face:o.face||0,speed:o.speed||(id==='me'?5:5.6),phase:Math.random()*6,hop:0,cb:null};
+    const ch={id,g,legL,legR,armL,armR,head,seat:o.seat||null,sitK:0,up:false,path:[],node,home:node,face:o.face||0,speed:o.speed||(id==='me'?5:5.6),phase:Math.random()*6,hop:0,cb:null};
     place(ch,node);return ch}
   function place(ch,node){const n=NODES[node]||[0,0];ch.g.position.set(n[0],0,n[1]);ch.node=node;ch.path=[];ch.cb=null;ch.g.rotation.y=ch.face;ch.target=ch.face}
   const chars={},HIDDEN0=[];
@@ -189,6 +197,21 @@ function initWorld(){
     else{ch.head.rotation.x=0}
     ch.head.rotation.y=(moving||reduceMotion)?0:Math.sin(ch.phase*.5)*.12;
     if(ch.hop>0){ch.hop=Math.max(0,ch.hop-dt*2.2);p.y=Math.sin(ch.hop*Math.PI)*.4}else p.y=0;
+    /* 有座位的人：停在座位旁的點、沒被叫起來時，慢慢坐下（sitK 0→1）：移到椅子上、腿往前伸、手放到鍵盤上打字、頭微低看螢幕 */
+    const st=ch.seat;
+    if(st){
+      const want=!moving&&!ch.up&&ch.node===st.node?1:0;
+      ch.sitK=moving?0:ch.sitK+(want-ch.sitK)*Math.min(1,dt*7);
+      const k=ch.sitK,n=NODES[st.node];
+      if(k>.002&&n){
+        p.x=n[0]+(st.at[0]-n[0])*k;p.z=n[1]+(st.at[1]-n[1])*k;p.y=-(st.drop||.1)*k;
+        if(want){ch.target=st.face;ch.gest=6}
+        const tp=reduceMotion?0:Math.sin(ch.phase*7)*.07,mix=(a,b)=>a+(b-a)*k;
+        ch.legL.rotation.x=ch.legR.rotation.x=mix(ch.legL.rotation.x,-Math.PI/2);
+        ch.armL.rotation.x=mix(ch.armL.rotation.x,-1.1+tp);ch.armR.rotation.x=mix(ch.armR.rotation.x,-1.1-tp);
+        ch.head.rotation.x=mix(ch.head.rotation.x,.12);ch.head.rotation.y*=1-k;
+      }
+    }
   }
   function walkXZ(id,x,z,cb){const ch=chars[id],p=ch.g.position;ch.node=null;ch.path=findPath(p.x,p.z,x,z).map(q=>new T.Vector3(q[0],0,q[1]));ch.cb=cb||null;if(!ch.path.length&&cb){ch.cb=null;cb()}}
   let freeOn=false;const keys={},KEY={ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r'};
@@ -352,6 +375,7 @@ function initWorld(){
     tower(id,state){setTower(id,state)},
     alarm(id){const old=alarmId;alarmId=id||null;if(old&&old!==alarmId&&towers[old])setTower(old,towers[old].state);if(alarmId)setTower(alarmId,'red')},
     show(id,on){if(chars[id])chars[id].g.visible=!!on},
+    up(id,on){if(id==null){for(const k in chars)chars[k].up=false;return}if(chars[id])chars[id].up=!!on},   /* 叫有座位的人站起來（講話時）；W.up(null) 全部可以坐回去 */
     put(id,node){const ch=chars[id],p=NODES[node];if(!ch||!p)return;ch.path=[];ch.cb=null;ch.node=node;ch.home=node;ch.g.position.set(p[0],0,p[1])},
     screen(id,lines,color){const s=screens[id];if(!s)return;s.st.lines=lines;if(color)s.st.color=color;s.redraw()},
     focus(at,dist){focus=at?{pos:new T.Vector3(at[0],at[1],at[2]),dist:dist||11}:null},

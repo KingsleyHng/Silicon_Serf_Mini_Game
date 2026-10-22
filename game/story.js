@@ -1,5 +1,5 @@
-/* Silicon Serf: two weeks, beat by beat.
-   Week 1 is the spec, RTL and verification; week 2 is synthesis, constraints and timing.
+/* Silicon Serf: three weeks, beat by beat.
+   Week 1 is the spec, RTL and verification; week 2 is synthesis, constraints and timing; week 3 is the analog side, at the lab bench with WSL.
    STORY.segs  the days (title card name, subtitle, start time, light). The clock counts minutes from the first Monday 00:00,
                so each day starts 1440 minutes after the one before and still reads 09:00.
                Each scene() sets the whole room, so a saved game resumes on any day looking right.
@@ -14,20 +14,25 @@ const SUBJECTS = [
   ['RTL', [['ctrl', 2], ['traps', 3], ['irq', 2], ['slverr', 2], ['lint', 3]]],
   ['Verification', [['wave', 2], ['assert', 2], ['cov', 1], ['cover', 2]]],
   ['Synthesis', [['flops', 2], ['synrep', 1], ['latch', 2], ['nolatch', 2]]],
-  ['Timing', [['clock', 2], ['indelay', 2], ['setup', 2], ['setupfix', 1], ['hold', 2], ['holdfix', 1]]]
+  ['Timing', [['clock', 2], ['indelay', 2], ['setup', 2], ['setupfix', 1], ['hold', 2], ['holdfix', 1]]],
+  ['Analog', [['ohm', 2], ['divider', 2], ['mos', 3], ['nand', 2], ['rise', 2], ['pullup', 2], ['rc', 2], ['filter', 2], ['sync', 2], ['gain', 2], ['amp', 2]]]
 ];
 const got = s => s[1].reduce((n, m) => n + ((ST.d.p || {})[m[0]] || 0), 0), most = s => s[1].reduce((n, m) => n + m[1], 0);
 const score = () => SUBJECTS.reduce((n, s) => n + got(s), 0), SCORE_MAX = SUBJECTS.reduce((n, s) => n + most(s), 0);
 
-/* The room on a given day: who is there, the regression light, the screens */
+/* The room on a given day: where KT is (his office unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu) */
 function room(o) {
-  W.show('kt', !!o.kt); if (o.kt) W.put('kt', o.kt);
+  W.show('kt', true); W.put('kt', o.kt || 'ceo');
   W.tower('reg', o.reg || 'off');
   W.screen('mine', o.mine || ['$ vim', 'apb_regs.v'], o.mineC || '#7fe3c8');
   W.screen('skg', o.skg || ['regression', 'idle'], o.skgC || '#93a9b2');
   W.screen('jjy', o.jjy || ['timing', 'WNS +0.12'], o.jjyC || '#7fe3c8');
-  W.screen('fpga', o.fpga || ['FPGA', 'no bitstream'], '#93a9b2');
+  W.screen('fpga', o.fpga || ['FPGA', 'no bitstream'], o.fpgaC || '#93a9b2');
+  W.screen('scope', o.scope || ['‾\\_/‾\\_/‾'], '#ffd36a');
+  W.screen('psu', o.psu || ['3.30 V', '0.02 A'], '#ff9e64');
 }
+/* Week 3: the block has signed off, everything at the desks is green */
+const WEEK3 = o => room(Object.assign({reg: 'green', skg: ['regression', 'PASS 48/48'], jjy: ['timing', 'MET ✓']}, o));
 
 STORY.segs = {
   mon: {name: 'Week 1 · Monday', sub: 'A badge, a laptop, and a spec to read.', t: day(0), mood: 'day',
@@ -49,7 +54,17 @@ STORY.segs = {
   thu2: {name: 'Week 2 · Thursday', sub: 'The first timing report.', t: day(10), mood: 'day',
     scene() {room({reg: 'green', skg: ['regression', 'PASS 48/48'], jjy: ['timing', 'WNS -0.40'], jjyC: '#ff8a7a'})}},
   fri2: {name: 'Week 2 · Friday', sub: 'Sign-off.', t: day(11), mood: 'day',
-    scene() {room({reg: 'green', skg: ['gate-level sim', 'PASS 48/48'], jjy: ['timing', 'MET ✓'], fpga: ['FPGA', 'irq cleared ✓']})}}
+    scene() {room({reg: 'green', skg: ['gate-level sim', 'PASS 48/48'], jjy: ['timing', 'MET ✓'], fpga: ['FPGA', 'irq cleared ✓']})}},
+  mon3: {name: 'Week 3 · Monday', sub: 'The evaluation board is back. It runs on a battery, not on ones and zeros.', t: day(14), mood: 'day',
+    scene() {WEEK3({fpga: ['EVB', 'VBAT ?'], fpgaC: '#ffc94a', psu: ['4.20 V', '0.00 A']})}},
+  tue3: {name: 'Week 3 · Tuesday', sub: 'What your gates are made of.', t: day(15), mood: 'day',
+    scene() {WEEK3({fpga: ['EVB', 'VBAT 96%'], fpgaC: '#7fe3c8'})}},
+  wed3: {name: 'Week 3 · Wednesday', sub: 'The temperature sensor will not answer.', t: day(16), mood: 'day',
+    scene() {WEEK3({fpga: ['I2C 0x48', 'NACK'], fpgaC: '#ff8a7a', scope: ['SDA ________']})}},
+  thu3: {name: 'Week 3 · Thursday', sub: 'One press, four counts.', t: day(17), mood: 'day',
+    scene() {WEEK3({fpga: ['capture', 'count 4/1'], fpgaC: '#ff8a7a', scope: ['_|‾|_|‾‾‾‾'], skg: ['board test', 'FAIL capture'], skgC: '#ff8a7a'})}},
+  fri3: {name: 'Week 3 · Friday', sub: 'A gain of three, then the whole board.', t: day(18), mood: 'day',
+    scene() {WEEK3({fpga: ['light', '0.28 V'], fpgaC: '#ffc94a', skg: ['board test', 'PASS 11/12']})}}
 };
 
 STORY.beats = [
@@ -60,7 +75,7 @@ STORY.beats = [
       ['kt', "People in this industry like to joke that we're silicon serfs: we work the fields, the chip gets the glory. Don't let them scare you."],
       ['me', "I'll do my best."],
       ['kt', 'KLN leads the RTL team and will look after you. Back of the room, middle desk.']],
-    after() {if (W) W.walk('kt', 'outside', () => W.show('kt', false))}},
+    after() {if (W) W.walk('kt', 'ceo')}},
   {seg: 'mon', to: 'kln', guide: 'Find KLN, your team lead',
     lines: () => [['kln', "Welcome. I'm KLN. Your block is small on purpose: three registers on APB, so the processor can set up the timer and read its status."],
       ['kln', 'Two weeks from now it should be RTL, verified, synthesized and meeting timing. That is the whole front-end in miniature.'],
@@ -238,9 +253,96 @@ STORY.beats = [
       ? [['kt', 'And that you got most of it right the first time. That is rare in your first two weeks.']]
       : [['kt', 'And that you made mistakes and fixed every one of them. That is exactly what the first two weeks are for.']])
       .concat([['kt', 'Silicon serfs, they call us. Long days in the fields, and the chip takes the credit.'],
-        ['kt', 'But every chip that ships is made of first blocks like yours. Welcome to the team. Eat something.']])},
-  {seg: 'fri2', end: true, t: day(11, 780),
-    lines: () => [['sys', 'Two weeks. One block, from spec to sign-off. Next: the timer itself.']]}
+        ['kt', 'But every chip that ships is made of first blocks like yours. Welcome to the team. Eat something.'],
+        ['kt', 'And on Monday the evaluation board comes back. WSL from the lab wants a digital engineer at the bench. That will be you.']])},
+
+  /* ═════════ Week 3 · Monday: a battery and two resistors ═════════ */
+  {seg: 'mon3', to: 'wsl', guide: 'Meet WSL at the lab bench',
+    lines: () => [['wsl', "Hi, I'm WSL. Analog design. You've walked past my bench for two weeks; I was the one muttering at the oscilloscope."],
+      ['wsl', 'The evaluation board for the timer chip is back. Your registers are inside the chip. Everything around it is my problem, and this week yours too.'],
+      ['wsl', 'The board runs on a lithium battery: 4.2 V when it is full. The chip has an ADC to watch it, but the ADC only reads up to 1.2 V.'],
+      ['wsl', "So we divide the battery down with two resistors. Ohm's law, the oldest equation in the building. Paper first."]],
+    mini: done => codeTask(T_OHM, done),
+    post: () => [['wsl', 'Forty kilohms. Which you cannot buy: resistors come in standard values. So we pick real ones that land close enough.']]},
+  {seg: 'mon3', to: 'fpga', guide: 'Wire the battery monitor at the bench',
+    lines: () => [['sys', 'WSL opens the board schematic on the bench monitor: the battery, two resistors, the ADC pin, and no wires yet.']],
+    mini: done => wireTask(T_DIVIDER, done),
+    post: () => [['wsl', 'Battery monitor done. It draws a few microamps forever, which is why the resistors are big. A battery notices everything.']],
+    after() {if (W) {W.screen('fpga', ['EVB', 'VBAT 96%'], '#7fe3c8'); W.screen('psu', ['4.20 V', '0.03 mA'], '#ff9e64')}}},
+
+  /* ═════════ Week 3 · Tuesday: transistors ═════════ */
+  {seg: 'tue3', to: 'jjy', guide: 'JJY has a question about gates',
+    lines: () => [['jjy', 'Remember the four hundred gates synthesis built from your RTL? I only ever see them as names in a library: NAND2, INV, DFF.'],
+      ['jjy', 'WSL has seen inside one. Go and ask, then come back and explain it to me. I have always wanted to know and never dared ask.']]},
+  {seg: 'tue3', to: 'wsl', guide: 'Ask WSL what a gate is made of',
+    lines: () => [['wsl', 'A gate is transistors, used as switches. Two kinds: an NMOS switch closes when its gate is 1, a PMOS switch closes when its gate is 0.'],
+      ['wsl', 'CMOS uses both. PMOS switches pull the output up to VDD, NMOS switches pull it down to ground, and for every input exactly one side conducts.'],
+      ['wsl', 'Quick check first, then build me a NAND.']],
+    mini: done => miniMos(() => wireTask(T_NAND, done)),
+    post: () => [['wsl', "Four transistors. The NAND2 in JJY's library is exactly this, drawn very, very small."]]},
+  {seg: 'tue3', to: 'jjy', guide: 'Explain the NAND gate to JJY',
+    lines: () => [['me', 'Two NMOS in series to ground, two PMOS side by side to VDD. Both inputs must be 1 to pull the output low.'],
+      ['jjy', 'So that is why NAND is the cheapest gate in the library, and AND costs more: an AND is a NAND with an inverter after it.'],
+      ['jjy', 'I will never read a netlist the same way again. Thank you.']]},
+
+  /* ═════════ Week 3 · Wednesday: I²C pull-ups ═════════ */
+  {seg: 'wed3', to: 'wsl', guide: 'Find out why the sensor will not answer',
+    lines: () => [['wsl', 'The chip talks to a temperature sensor over I²C: two wires, SDA for data and SCL for the clock. The sensor never answers.'],
+      ['wsl', 'On I²C nobody drives a line high. Every chip can only pull it low, or let go: open drain. When everyone lets go, a resistor to VDD pulls the line back up.'],
+      ['wsl', 'There are no pull-ups on this board. Someone forgot them, and that someone was me. Before we add them: how fast does a line rise?']],
+    mini: done => codeTask(T_RISE, done),
+    post: () => [['wsl', 'Under 1000 ns. A smaller resistor would be faster, but then the pin has to sink more current when it pulls low. Pick carefully.']]},
+  {seg: 'wed3', to: 'fpga', guide: 'Add the I²C pull-ups on the board',
+    lines: () => [['sys', 'The schematic: the timer chip on the left, the sensor on the right, VDD at the top, two empty places for resistors.']],
+    mini: done => wireTask(T_PULLUP, done),
+    post: () => [['sys', 'WSL solders two resistors onto the board. The bus analyser scrolls: address 0x48, ACK, two bytes.'],
+      ['wsl', 'Twenty-three and a half degrees. It talks. Thank you, digital person.']],
+    after() {if (W) {W.screen('fpga', ['I2C 0x48', 'temp 23.5 C'], '#7fe3c8'); W.screen('scope', ['‾|_|‾|_|‾'], '#7fe3c8')}}},
+
+  /* ═════════ Week 3 · Thursday: a bouncing button ═════════ */
+  {seg: 'thu3', to: 'skg', guide: 'SKG found a strange bug on the board',
+    lines: () => [['skg', 'The board test presses the capture button once and expects the timer to count one. It counts four. Sometimes six.'],
+      ['skg', 'Your RTL passed every test, so for once this is not a digital bug. It is a mechanical one. Ask WSL.']]},
+  {seg: 'thu3', to: 'wsl', guide: 'Ask WSL why one press counts four times',
+    lines: () => [['wsl', 'Contact bounce. When metal hits metal it bounces for a few milliseconds, and your timer sees every bounce as a press.'],
+      ['wsl', 'The fix is a low-pass filter: a resistor in series, a capacitor to ground. Slow changes, like a press, get through. Fast ones are smoothed away.']],
+    mini: done => codeTask(T_RC, done),
+    post: () => [['wsl', 'Sixteen hertz: a time constant of 10 ms, and bounce is over in 5. Now build one.']]},
+  {seg: 'thu3', to: 'fpga', guide: 'Build the button filter',
+    lines: () => [['sys', "The button on the left, the timer's capture pin on the right. A resistor, a capacitor, and a drawer of values."]],
+    mini: done => wireTask(T_FILTER, done),
+    post: () => [['sys', 'You press the button once. The timer counts one. You press it ten times. Ten.']],
+    after() {if (W) {W.screen('fpga', ['capture', 'count 10/10'], '#7fe3c8'); W.screen('skg', ['board test', 'PASS capture'], '#7fe3c8')}}},
+  {seg: 'thu3', to: 'wsl', guide: 'Tell WSL the button counts right',
+    lines: () => [['wsl', 'Ten for ten. But the filter is only half the fix. The other half is digital, so it is yours.']],
+    mini: miniSync,
+    post: () => PTS().sync === 2
+      ? [['wsl', 'Both right. Analog cleans up the edge; digital makes it safe to use. The boundary needs both sides.']]
+      : [['wsl', 'The filter makes the edge slow, so the pin needs hysteresis. And anything from outside the clock needs two flip-flops before your logic touches it.'],
+        ['wsl', 'Every chip has a border like this. Most of the bugs that escape to customers live on it.']]},
+
+  /* ═════════ Week 3 · Friday: an amplifier, then the whole board ═════════ */
+  {seg: 'fri3', to: 'qyl', guide: 'QYL has one last item for the board',
+    lines: () => [['qyl', 'Last part of the board: a light sensor. Its output goes from 0 to 0.4 V. The ADC reads 0 to 1.2 V.'],
+      ['qyl', 'Fed straight in, the sensor would only ever use a third of the ADC. The spec says: amplify by three. WSL has the op-amp.']]},
+  {seg: 'fri3', to: 'wsl', guide: 'Design the amplifier with WSL',
+    lines: () => [['wsl', 'An op-amp has two inputs, one output, and one habit: it moves its output until both inputs are at the same voltage.'],
+      ['wsl', 'Put the signal on the + input and feed a third of the output back to the − input. To make the inputs equal, the output has to be three times the signal.']],
+    mini: done => codeTask(T_GAIN, () => wireTask(T_AMP, done)),
+    post: () => [['wsl', 'A gain of three. That was the last part. Power up the whole board.']],
+    after() {if (W) W.walk('kt', 'lab')}},
+  {seg: 'fri3', to: 'fpga', guide: 'Power up the whole board',
+    lines: () => [['sys', 'You switch on the bench supply. Battery 96%. Temperature 23.5 °C. Light 0.84 V on the ADC. One press, one count.'],
+      ['sys', 'Your registers, inside a chip, on a board that works.']],
+    after() {if (W) {W.screen('fpga', ['EVB', 'all OK ✓'], '#7fe3c8'); W.screen('skg', ['board test', 'PASS 12/12'], '#7fe3c8')}}},
+  {seg: 'fri3', to: 'kt', guide: 'KT came down to the lab',
+    lines: () => [['kt', 'I heard the board works. I had to see it for myself.'],
+      ['kt', 'Three weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, and wired up the board it lives on.']].concat(got(SUBJECTS[5]) >= 18
+      ? [['kt', 'WSL says you got most of the analog right the first time. Most digital engineers never even look at the other side of the pin.']]
+      : [['kt', 'WSL says the analog side made you sweat. Good. Most digital engineers never even look at the other side of the pin.']])
+      .concat([['kt', 'Next: the timer itself. Go home. Rest. Nanoseconds are tiring, and microamps are worse.']])},
+  {seg: 'fri3', end: true, t: day(18, 1050),
+    lines: () => [['sys', 'Three weeks. One block, from spec to sign-off, and the board it lives on. Next: the timer itself.']]}
 ];
 
 /* Ending card: written from what actually happened */
@@ -249,9 +351,9 @@ STORY.ending = () => {
   const best = SUBJECTS.slice().sort((a, b) => got(b) / most(b) - got(a) / most(a))[0], worst = SUBJECTS.slice().sort((a, b) => got(a) / most(a) - got(b) / most(b))[0];
   return {
     title: r >= .9 ? 'Tape-out material' : r >= .65 ? 'Promising serf' : 'Serf in training',
-    sub: r >= .9 ? 'Your first block, from spec to sign-off, nearly flawless.' : r >= .65 ? 'Your first block signed off. A few bruises on the way.' : 'Your first block signed off, and you learned where every trap is.',
-    led: '2 weeks',
-    tl: [['WEEK 1', 'RTL and verification'], ['WEEK 2', 'Synthesis and timing'], ['FRIDAY', 'Signed off']],
+    sub: r >= .9 ? 'Your first block and its board, from spec to bench, nearly flawless.' : r >= .65 ? 'Your first block signed off and its board works. A few bruises on the way.' : 'Your first block signed off, its board works, and you learned where every trap is.',
+    led: '3 weeks',
+    tl: [['WEEK 1', 'RTL and verification'], ['WEEK 2', 'Synthesis and timing'], ['WEEK 3', 'Analog and the board']],
     stats: SUBJECTS.map(x => [x[0], got(x) + ' / ' + most(x)])
       .concat([['Review', ST.d.review === 'explain' ? 'Explained' : ST.d.review === 'ask' ? 'Asked why' : 'Argued']]),
     lines: [
@@ -261,7 +363,7 @@ STORY.ending = () => {
       ST.d.review === 'explain' ? 'KLN approved your RTL on your own explanation.' : ST.d.review === 'ask' ? 'You asked KLN why, and came away knowing the reason behind your own code.' : 'KLN approved your RTL, and reminded you that passing tests are not a reason.',
       ST.d.wait === 'skg' ? 'You watched a regression on your first day, so the red light on Thursday did not scare you.' : 'You read the spec before writing a line, as KLN asked.'
     ],
-    share: 'Silicon Serf: I took my first chip block from spec to sign-off. ' + s + ' / ' + SCORE_MAX + '.'
+    share: 'Silicon Serf: I took my first chip block from spec to sign-off, then wired up the board it lives on. ' + s + ' / ' + SCORE_MAX + '.'
   };
 };
 
@@ -271,7 +373,8 @@ const CHAT = {
   skg: ['If I find nothing, I worry my tests are too easy.', 'Every bug I find here is one the customer never sees.'],
   qyl: ['If the spec is unclear, tell me. Then it is my bug, not yours.', 'Every register bit has a reason. Ask me about any of them.'],
   jjy: ['Every path has a deadline. Most of them do not know it yet.', 'A nanosecond is about thirty centimetres of light. Chips are small for a reason.'],
-  kt: ['Go on, the team is waiting for you.']
+  wsl: ['Everything is analog if you zoom in far enough.', 'A one and a zero are just two voltages we agreed not to argue about.', 'The scope never lies. The probe sometimes does.'],
+  kt: ['Go on, the team is waiting for you.', 'My door is always open. It is also made of glass, so I see who walks past it.', 'That wafer on the stand is from our first tape-out. Every die on it worked.']
 };
 let chatN = 0;
 STORY.talk = id => {

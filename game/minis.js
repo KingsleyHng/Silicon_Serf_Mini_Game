@@ -1,4 +1,4 @@
-/* Silicon Serf: the mini-games. Two kinds, both in the bottom panel.
+/* Silicon Serf: the mini-games. Two kinds, both in the bottom panel (the third, wiring a circuit, is in circuit.js).
 
    quiz(title, intro, qs, key, done)        pick one answer per question, then "Check"
      qs   [{q: question HTML, opts: [answer, …], ok: index of the right answer, why: one-line explanation, code: true for code answers}, …]
@@ -9,6 +9,7 @@
      t.kind   'expr' (Verilog), 'sdc' (a constraint) or 'num' (a number)
      t.title, t.intro (HTML above the code), t.code (the code around the blank, ____ marks the blank), t.ask (what to type)
      The answer box is a small editor: syntax colours, the task's signals in their own colour (other names in red), Enter runs.
+     t.file   the file name over the editor (otherwise one of the APB block's files, from the kind)
      t.hint   shown after the first wrong run; t.answer shown by "Show answer"
      t.say    'assert' or 'cover' changes how a counterexample is explained
      plus what check.js needs for that kind (sigs, ref, w, …)
@@ -68,7 +69,7 @@ function hlCode(text, sigs, flag) {
   }
   return out;
 }
-const FILE = t => t.kind === 'sdc' ? 'apb_regs.sdc' : t.kind === 'num' ? 'timing_report.txt' : t.say ? 'apb_regs_sva.sv' : 'apb_regs.v';
+const FILE = t => t.file || (t.kind === 'sdc' ? 'apb_regs.sdc' : t.kind === 'num' ? 'timing_report.txt' : t.say ? 'apb_regs_sva.sv' : 'apb_regs.v');
 
 function codeTask(t, done) {
   let runs = 0, solved = false, shown = false;

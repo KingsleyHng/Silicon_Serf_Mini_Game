@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* 自動試玩：從主頁一路玩到結算卡，兩種玩家各一次。先跑 npm run build。
      node tools/test.js            電腦（1280×800、亮色、選第一個選項、打字題打對）＋電腦暗色（1440×900、選最後一個選項、打字題打錯三次再看答案）；這個遊戲只做電腦版
-   每一輪最後要印 ended: true、card: true（分享圖卡畫出來了）；整份最後一行 TEST OK 或 TEST FAILED。截圖在 out/shot-*.png（-end 是圖卡、-recap 是結案報告）。
+   每一輪最後要印 ended: true、card: true（分享圖卡畫出來了）；整份最後一行 TEST OK 或 TEST FAILED。截圖在 out/shot-*.png（-end 是圖卡、-recap 是結案報告、-wire 是第一塊接好的電路板）。
    用到 playwright-core 與一個 Chromium 系的瀏覽器，依序找：環境變數 CHROMIUM 指到的執行檔（或 PLAYWRIGHT_BROWSERS_PATH 底下的 chromium）、
    npx playwright-core install chromium 裝的那一個、電腦上已經裝好的瀏覽器（channel）。都找不到就印出要跑哪一行指令，不丟一大段錯誤。
    也檢查授權（LICENSE）的兩個條件：public/index.html 開頭有框架的授權聲明（建置自動加的那一行 /*! Made with the fab24hr engine … *\/），
@@ -36,7 +36,24 @@ const ANSWERS = {
   clock: 'create_clock -name PCLK -period 5.0 [get_ports {PCLK}]',
   indelay: 'set_input_delay 2 -clock PCLK [get_ports PADDR]',
   setup: '-0.40',
-  hold: '-0.14 ns'
+  hold: '-0.14 ns',
+  ohm: '40 kΩ',
+  rise: '799 ns',
+  rc: '15.9 Hz',
+  gain: '20k'
+};
+/* 拉線題（game/circuit.js 的 wireTask）的正確接法：也故意跟標準答案接得不一樣（電阻對調、換一組值），測「接法不同但電路對就算對」。vals 是下拉選單選第幾個 */
+const WIRES = {
+  divider: { vals: { R1: 3, R2: 5 }, wires: [['VBAT.p', 'R2.b'], ['R2.a', 'ADC.p'], ['ADC.p', 'R1.a'], ['R1.b', 'GND.p']] },
+  nand: { wires: [['P2.s', 'VDD.p'], ['P1.s', 'P2.s'], ['Y.p', 'P2.d'], ['P1.d', 'P2.d'], ['N2.d', 'P1.d'], ['N2.s', 'N1.d'], ['N1.s', 'GND.p'], ['P1.g', 'B.p'], ['N2.g', 'B.p'], ['P2.g', 'A.p'], ['N1.g', 'A.p']] },
+  pullup: { vals: { R1: 2, R2: 2 }, wires: [['R2.a', 'VDD.p'], ['R1.a', 'R2.a'], ['R2.b', 'DEV.SDA'], ['DEV.SDA', 'MCU.SDA'], ['R1.b', 'DEV.SCL'], ['DEV.SCL', 'MCU.SCL']] },
+  filter: { vals: { R1: 2, C1: 1 }, wires: [['BTN.p', 'R1.b'], ['R1.a', 'C1.b'], ['C1.a', 'GND.p'], ['IN.p', 'R1.a']] },
+  amp: { vals: { R1: 1, R2: 2 }, wires: [['VIN.p', 'U1.p'], ['OUT.p', 'U1.o'], ['R2.b', 'U1.o'], ['R2.a', 'U1.m'], ['R1.b', 'U1.m'], ['R1.a', 'GND.p']] }
+};
+/* 接一塊板子：先選值，再一根一根接（點一個腳、再點另一個腳） */
+const wireUp = async (pg, w) => {
+  for (const k of Object.keys(w.vals || {})) await pg.selectOption('select[data-part="' + k + '"]', String(w.vals[k]));
+  for (const [a, b] of w.wires) { await pg.click('[data-pin="' + a + '"]'); await pg.click('[data-pin="' + b + '"]') }
 };
 const creditErr = (where, bad) => 'credit line on the ' + where + ' screen (required by LICENSE) ／ 出處那一行（授權的條件）：' + bad.join(', ');
 
@@ -72,6 +89,16 @@ async function play(br, o) {
       if (!o.last) { await pg.fill('#codeIn', ANSWERS[task] || ''); await click('#run'); log.push('code:' + task); await pg.waitForTimeout(100); if (!(await vis('#next'))) { errors.push('typed answer for ' + task + ' was not accepted: ' + (await pg.textContent('#fb')).slice(0, 160)); break } continue }
       if (await vis('#reveal')) { await click('#reveal'); log.push('reveal:' + task); continue }
       await pg.fill('#codeIn', await pg.getAttribute('.task', 'data-wrong')); await click('#run'); continue;
+    }
+    if (await vis('#wireRun')) {   /* 拉線題：第一輪照 WIRES 接；第二輪接 data-wrong 那塊錯的板子、跑三次，再按「看答案」 */
+      if (await vis('#next')) { await click('#next'); log.push('next'); continue }
+      const task = await pg.getAttribute('.task', 'data-task');
+      if (!o.last) { await wireUp(pg, WIRES[task]); await click('#wireRun'); log.push('wire:' + task); await pg.waitForTimeout(100); if (!(await vis('#next'))) { errors.push('wiring for ' + task + ' was not accepted: ' + (await pg.textContent('#fb')).slice(0, 200)); break } if (!o.shot) { o.shot = 1; await pg.screenshot({ path: path.join(OUT, 'shot-' + o.id + '-wire.png') }) } continue }
+      if (await vis('#reveal')) { await click('#reveal'); log.push('reveal:' + task); continue }
+      if (!(await pg.$('.wb .wire'))) await wireUp(pg, JSON.parse(await pg.getAttribute('.task', 'data-wrong')));
+      await click('#wireRun'); await pg.waitForTimeout(50);
+      if (await vis('#fb .fb-err')) { errors.push('the wrong board for ' + task + ' is not complete: ' + (await pg.textContent('#fb')).slice(0, 200)); break }
+      continue;
     }
     if (await vis('#panel .qz')) {   /* 小測驗：每一題還沒選的，第一輪選第一個答案、第二輪選最後一個 */
       const picked = await pg.evaluate(last => { const g = Array.from(document.querySelectorAll('#panel .qz')).find(q => !q.querySelector('.opt.on') && q.querySelector('.opt:not([disabled])')); if (!g) return false; const os = g.querySelectorAll('.opt'); os[last ? os.length - 1 : 0].click(); return true }, !!o.last);

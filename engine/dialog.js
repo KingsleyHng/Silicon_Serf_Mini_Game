@@ -37,7 +37,7 @@ function say(lines,done,opts){
   let i=0;opts=opts||{};
   const show=()=>{
     const l=lines[i],who=l[0],last=i===lines.length-1;
-    if(W&&DLG.present(who)){W.arrive(who);W.face(who,'me');W.face('me',who)}   // 還在走過來的人，開口的時候直接到位（不然會變成人不在場卻在講話）
+    if(W&&DLG.present(who)){W.arrive(who);W.up(who,true);W.face(who,'me');W.face('me',who)}   // 還在走過來的人，開口的時候直接到位（不然會變成人不在場卻在講話）
     clearInterval(typeT);typeT=0;SFX.blip();DLG.line(who);
     dlg.hidden=false;dlg.dataset.who=who;
     dlg.innerHTML=DLG.who(who)
