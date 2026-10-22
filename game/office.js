@@ -1,6 +1,6 @@
 /* The office of KT Silicon Labs: a bright two-storey open-plan office in pixel style (16 pixels per metre, like the people's skins), 26 by 16 metres.
    Downstairs, back wall left to right: two phone booths, tall windows, the brand wall with the logo and a neon sign, the FPGA lab, the kitchen.
-   The open floor: the design pod (six desks facing each other: you, SKG and JJY on one side, KLN across from you), the test & layout pod (JJH, SYP),
+   The open floor, with the logo inlaid in it: the design pod (six desks facing each other: you, SKG and JJY on one side, KLN across from you), the test & layout pod (JJH, SYP),
    a lounge with two sofas, a huddle table with a whiteboard, a ping-pong table and bean bags by the front door (right wall).
    Upstairs: a mezzanine along the left wall, 3 m up, reached by the stairs beside it: the meeting room at the back, KT's glass office at the front.
    Under the mezzanine: the server room and the washrooms (closed). The back and left walls are two storeys high, with a band of high windows.
@@ -130,12 +130,7 @@ levelAdd('office', function (K) {
     [[u0, v1], [u1, v1], [u0, v0], [u1, v0]].forEach(([u, v], i) => uv.setXY(i, u / VW, v));
     const m = new T.Mesh(geo, viewMat); m.position.set(x, y, z); m.rotation.y = ry; G.add(m);
   };
-  /* Other one-off pictures: the chip on the rug, the wafer, the book spines, the drinks in the fridge */
-  const chipTex = pxc(32, 32, g => {
-    P(g, '#e3e9ec', 0, 0, 32, 32); P(g, '#c7d0d5', 0, 0, 32, 1); P(g, '#c7d0d5', 0, 31, 32, 1); P(g, '#c7d0d5', 0, 0, 1, 32); P(g, '#c7d0d5', 31, 0, 1, 32);
-    for (let i = 8; i < 25; i += 2) {P(g, '#c9a24a', i, 3, 1, 4); P(g, '#c9a24a', i, 25, 1, 4); P(g, '#c9a24a', 3, i, 4, 1); P(g, '#c9a24a', 25, i, 4, 1)}
-    P(g, '#22303b', 7, 7, 18, 18); P(g, '#2e4050', 9, 9, 14, 14); P(g, '#1f5f8b', 11, 11, 10, 10); P(g, '#3b86bd', 12, 12, 4, 4); P(g, '#e8eef1', 8, 8, 1, 1);
-  });
+  /* Other one-off pictures: the wafer, the book spines, the drinks in the fridge */
   const waferTex = pxc(32, 32, g => {
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
       const r = Math.hypot(x - 15.5, y - 15.5);
@@ -178,7 +173,6 @@ levelAdd('office', function (K) {
   flat(4.2, 6.6, W.terrazzo, 10.9, .006, -4.7, 1, G);                // the kitchen
   flat(4.6, 2.4, W.rug, 3.4, .006, 6.6, 1.2, G);                     // the lounge rug
   flat(3.2, 2.2, W.rug, 9.9, .006, 6.6, 1.2, G);                     // the bean bags by the door
-  pic(chipTex, 2.2, 2.2, .9, .007, 1.9, 0, -Math.PI / 2);           // a chip rug between the pods
   /* The back and left walls go up two floors; the right wall stays low so the camera sees in */
   box(26.6, 6.4, .3, wall, 0, 3.2, BW - .15, G);
   box(.3, 6.4, 16.3, wall, LW - .15, 3.2, -.15, G);
@@ -212,6 +206,9 @@ levelAdd('office', function (K) {
   const logoTex = new T.TextureLoader().load(LOGO.src); logoTex.encoding = T.sRGBEncoding; logoTex.anisotropy = 4;
   const logo = new T.Mesh(new T.PlaneGeometry(2.45, 2.45 * LOGO.h / LOGO.w), lam(0xffffff, {map: logoTex, transparent: true}));
   logo.position.set(0, 2.15, BW + .08); G.add(logo);
+  /* and the logo again, 5.6 m wide, inlaid in the floor in front of the pods */
+  const floorLogo = new T.Mesh(new T.PlaneGeometry(5.6, 5.6 * LOGO.h / LOGO.w), lam(0xffffff, {map: logoTex, transparent: true, depthWrite: false}));
+  floorLogo.rotation.x = -Math.PI / 2; floorLogo.position.set(-1.4, .009, 2.3); G.add(floorLogo);
   [-1.85, 1.85].forEach(x => {
     const w = new T.Mesh(new T.CylinderGeometry(.3, .3, .02, 32), [lam(0xb8c2cc), lam(0xffffff, {map: waferTex, alphaTest: .5}), lam(0xb8c2cc)]);
     w.rotation.x = Math.PI / 2; w.position.set(x, 2.15, BW + .04); G.add(w);
