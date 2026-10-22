@@ -6,7 +6,8 @@
                Each scene() sets the whole room, so a saved game resumes on any day looking right.
    STORY.beats one thing to do at a time: who or where to go (to), the "next step" line (guide), what is said (lines),
                an optional mini-game (mini), what is said after it (post), and what changes in the world (after).
-   ST.d.p holds the points of every mini-game (minis.js); ST.d.wait and ST.d.review the two choices. The ending is written from them. */
+   ST.d.p holds the points of every mini-game (minis.js); ST.d.wait and ST.d.review the two choices. The ending is written from them.
+   The end of week 4 is the probation review: accuracy is the share of all points earned, graded A to F, and 60% passes. */
 const DAY = 1440;
 const day = (n, h) => n * DAY + (h || 540);
 /* Every mini-game's points, by subject: [subject, [[mini-game, most points], …]] */
@@ -21,6 +22,10 @@ const SUBJECTS = [
 ];
 const got = s => s[1].reduce((n, m) => n + ((ST.d.p || {})[m[0]] || 0), 0), most = s => s[1].reduce((n, m) => n + m[1], 0);
 const score = () => SUBJECTS.reduce((n, s) => n + got(s), 0), SCORE_MAX = SUBJECTS.reduce((n, s) => n + most(s), 0);
+/* The review: the percentage is rounded down, so a shown 60% always passes */
+const PASS = .6, GRADES = [[.9, 'A'], [.8, 'B'], [.7, 'C'], [.6, 'D'], [0, 'F']];
+const review = () => {const s = score(), r = s / SCORE_MAX; return {s, pct: Math.floor(r * 100), g: GRADES.find(x => r >= x[0])[1], pass: r >= PASS, need: Math.ceil(PASS * SCORE_MAX) - s}};
+const pct = x => Math.floor(got(x) / most(x) * 100) + '%';
 
 /* The room on a given day: where KT is (the office upstairs unless said otherwise), the regression light, the screens (on the lab bench: fpga, scope, psu; jjh on the test desk) */
 function room(o) {
@@ -423,32 +428,44 @@ STORY.beats = [
     lines: () => [['kt', 'Four weeks ago you had a badge and a laptop. Since then you wrote the RTL, verified it, signed it off, wired up its board and made it testable.']].concat(got(SUBJECTS[6]) >= 13
       ? [['kt', 'JJH says you found faults faster than the tool does. JJH never says things like that.']]
       : [['kt', 'JJH says you argued with nobody and fixed everything. That is the job.']])
-      .concat([['kt', 'The masks are ordered. In twelve weeks the first wafers come back, and every chip on them will go through the test you helped build.'],
-        ['kt', 'Go home. Rest. On Monday: the timer itself.']])},
+      .concat([['kt', 'The masks are ordered. In twelve weeks the first wafers come back, and every chip on them will go through the test you helped build.']])
+      .concat(review().pass
+        ? [['kt', 'Which brings me to your probation review. ' + review().pct + '% across four weeks: grade ' + review().g + '. You pass.'],
+          ['kt', 'Welcome to the team, properly. Go home. Rest. On Monday: the timer itself.']]
+        : [['kt', 'Which brings me to your probation review. ' + review().pct + '% across four weeks: grade F. The bar is 60%.'],
+          ['kt', 'Nobody is fired for one hard month. But the timer waits: we extend your probation, and you go through the weak spots again with the team.'],
+          ['kt', 'Go home. Rest. On Monday we try again.']])},
   {seg: 'fri4', end: true, t: day(25, 1050),
-    lines: () => [['sys', 'Four weeks. One block, from spec to sign-off, the board it lives on, and the test that will check every chip made from it. Next: the timer itself.']]}
+    lines: () => [['sys', 'Four weeks. One block, from spec to sign-off, the board it lives on, and the test that will check every chip made from it. '
+      + (review().pass ? 'Probation passed. Next: the timer itself.' : 'Probation extended: the timer waits until you pass.')]]}
 ];
 
-/* Ending card: written from what actually happened */
+/* Ending card: written from what actually happened. The title is the review's verdict and grade; each subject shows its points and accuracy */
 STORY.ending = () => {
-  const s = score(), r = s / SCORE_MAX;
+  const {s, pct: p, g, pass, need} = review();
   const best = SUBJECTS.slice().sort((a, b) => got(b) / most(b) - got(a) / most(a))[0], worst = SUBJECTS.slice().sort((a, b) => got(a) / most(a) - got(b) / most(b))[0];
   return {
-    title: r >= .9 ? 'Tape-out material' : r >= .65 ? 'Promising serf' : 'Serf in training',
-    sub: r >= .9 ? 'Your first block, its board and its test, from spec to sign-off, nearly flawless.' : r >= .65 ? 'Your first block signed off, its board works and every chip can be tested. A few bruises on the way.' : 'Your first block signed off, its board works, it can be tested, and you learned where every trap is.',
+    title: (pass ? 'PASS' : 'FAIL') + ' · Grade ' + g,
+    more: [p + '% correct', 'pass mark 60%'],
+    sub: {A: 'Tape-out material. Your first block, its board and its test, nearly flawless.', B: 'A promising serf. Your first block signed off, with a few bruises on the way.',
+      C: 'A solid serf. Your block signed off, and you know which corners to check twice.', D: 'Passed, just. Your block signed off, but the review noticed every slip.',
+      F: 'Probation extended. Your block signed off, but too many answers went wrong on the way.'}[g],
     led: '4 weeks',
     tl: [['WK 1–2', 'RTL, verification, timing'], ['WK 3', 'Analog and the board'], ['WK 4', 'Design for test']],
     /* the card shows the first six: the five big subjects and Test; Spec and the review follow */
-    stats: SUBJECTS.slice(1).concat(SUBJECTS.slice(0, 1)).map(x => [x[0], got(x) + ' / ' + most(x)])
+    stats: SUBJECTS.slice(1).concat(SUBJECTS.slice(0, 1)).map(x => [x[0], got(x) + ' / ' + most(x) + ' · ' + pct(x)])
       .concat([['Review', ST.d.review === 'explain' ? 'Explained' : ST.d.review === 'ask' ? 'Asked why' : 'Argued']]),
     lines: [
-      'Score: ' + s + ' out of ' + SCORE_MAX + '.',
-      got(best) === most(best) ? 'Your strongest subject: ' + best[0] + ', without a single point dropped.' : 'Your strongest subject: ' + best[0] + '.',
-      got(worst) < most(worst) ? 'Worth another look: ' + worst[0] + ' (' + got(worst) + ' of ' + most(worst) + ').' : 'Every subject, full marks.',
+      'Probation review: ' + (pass ? 'PASS' : 'FAIL') + '. Accuracy ' + p + '% (' + s + ' of ' + SCORE_MAX + ' points), grade ' + g + '.',
+      'Grades: A 90% and up · B 80% · C 70% · D 60% · F below 60%. You need 60% to pass.',
+      pass ? (g === 'A' ? 'KT has already put your name down for the next tape-out.' : 'Points come from getting it right early: a first-try answer is worth the most. Play again to raise your grade.')
+        : 'You were ' + need + ' point' + (need === 1 ? '' : 's') + ' short. Play again, and answer before asking for the answer: a first-try answer is worth the most.',
+      got(best) === most(best) ? 'Your strongest subject: ' + best[0] + ', without a single point dropped.' : 'Your strongest subject: ' + best[0] + ' (' + pct(best) + ').',
+      got(worst) < most(worst) ? 'Worth another look: ' + worst[0] + ' (' + got(worst) + ' of ' + most(worst) + ', ' + pct(worst) + ').' : 'Every subject, full marks.',
       ST.d.review === 'explain' ? 'KLN approved your RTL on your own explanation.' : ST.d.review === 'ask' ? 'You asked KLN why, and came away knowing the reason behind your own code.' : 'KLN approved your RTL, and reminded you that passing tests are not a reason.',
       ST.d.wait === 'skg' ? 'You watched a regression on your first day, so the red light on Thursday did not scare you.' : 'You read the spec before writing a line, as KLN asked.'
     ],
-    share: 'Silicon Serf: I took my first chip block from spec to sign-off, wired up the board it lives on, and made it testable. ' + s + ' / ' + SCORE_MAX + '.'
+    share: 'Silicon Serf: four weeks taking my first chip block from spec to sign-off, its board and its test. Probation review: ' + (pass ? 'PASS' : 'FAIL') + ', grade ' + g + ', ' + p + '% correct.'
   };
 };
 
