@@ -26,6 +26,7 @@ const nextIndex=i=>{const B=STORY.beats;for(let j=i;j<B.length;j++)if(!B[j].when
 const isPerson=id=>!!STORY.cast[id]||!!(W&&W.has(id));
 const nameOf=id=>id==='me'?(ST.name||'你'):STORY.cast[id]?STORY.cast[id].name:STORY.places[id]?STORY.places[id].name:id;
 const standOf=id=>{const p=STORY.places[id];return p?p.at:[0,0]};
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],(a[2]||0)-(b[2]||0));   /* [x,z,地板高度]：樓上、樓下的人不算在旁邊 */
 
 /* ── 存檔：存「哪個時刻的第幾件事」，beats 中間插了新的事，舊存檔也不會接到別的時刻去 ── */
 function saveAt(){const B=STORY.beats,i=Math.min(ST.q,B.length-1),b=B[i];return [b.seg,i-B.findIndex(x=>x.seg===b.seg)]}
@@ -97,7 +98,7 @@ function goTo(id){
   if(busy||!ST.on||!id)return;
   if(!W){interact(id);return}
   const s=W.snap(),me=s.me;let x,z;
-  if(isPerson(id)){if(!s.vis[id])return;const p=W.dest(id)||s[id],dx=me[0]-p[0],dz=me[1]-p[1],L=Math.hypot(dx,dz)||1;if(L<2.6){interact(id);return}   /* 還在走的人：走到他要去的地方 */
+  if(isPerson(id)){if(!s.vis[id])return;const p=W.dest(id)||s[id],dx=me[0]-p[0],dz=me[1]-p[1],L=Math.hypot(dx,dz)||1;if(dist(me,p)<2.6){interact(id);return}   /* 還在走的人：走到他要去的地方 */
     /* 站在他旁邊 1.4 的地方：先試朝著你的那一側，被櫃台、桌子擋住就換一側（八個方向裡離你最近、沒被擋住的） */
     const a0=Math.atan2(dz,dx),C=[0,1,-1,2,-2,3,-3,4].map(k=>a0+k*Math.PI/4).map(a=>[p[0]+Math.cos(a)*1.4,p[1]+Math.sin(a)*1.4]).filter(q=>!W.blocked(q[0],q[1])).sort((u,v)=>Math.hypot(u[0]-me[0],u[1]-me[1])-Math.hypot(v[0]-me[0],v[1]-me[1]));
     [x,z]=C[0]||[p[0]+dx/L*1.4,p[1]+dz/L*1.4]}
@@ -137,14 +138,14 @@ DLG.who=id=>{
   const c=STORY.cast[id]||{},nm=id==='me'?(ST.name||c.name||'你'):c.name||id;
   return '<div class="who"><span class="sw" style="background:'+(c.color||'var(--accent)')+'">'+(c.tag||nm.slice(0,1))+'</span><div><b>'+nm+'</b>'+(c.role?'<small>'+c.role+'</small>':'')+'</div></div>'};
 DLG.present=id=>id!=='me'&&!!W&&W.has(id);
-DLG.line=id=>{if(!W||!DLG.present(id))return;const s=W.snap(),me=s.me,o=s[id],far=Math.hypot(o[0]-me[0],o[1]-me[1]),d=matchMedia('(min-width:860px)').matches?15:17;
-  if(far>9)W.focus([me[0],1.2,me[1]],d);else W.focus([(me[0]+o[0])/2,1.2,(me[1]+o[1])/2],d+far*.6)};   /* 鏡頭靠近：對準你和說話的人中間 */
+DLG.line=id=>{if(!W||!DLG.present(id))return;const s=W.snap(),me=s.me,o=s[id],far=dist(me,o),d=matchMedia('(min-width:860px)').matches?15:17;
+  if(far>9)W.focus([me[0],1.2+(me[2]||0),me[1]],d);else W.focus([(me[0]+o[0])/2,1.2+((me[2]||0)+(o[2]||0))/2,(me[1]+o[1])/2],d+far*.6)};   /* 鏡頭靠近：對準你和說話的人中間 */
 DLG.end=()=>{if(W){W.focus(null);W.up(null)}};   /* 講完：鏡頭拉回，站起來講話的人坐回去 */
 MOVE.can=()=>ST.on&&!busy&&panelEl.hidden&&sysEl.hidden&&tcard.hidden&&dlg.hidden&&endEl.hidden&&!MOVE.cover()&&!MOVE.page();
 MOVE.near=()=>{
   const s=W.snap(),b=curBeat(),tgt=b&&b.to&&(!b.ring||ST.rung===ST.q)?b.to:null;let near=null,best=2.6;
-  for(const id in STORY.cast){if(id==='me'||!s.vis[id])continue;const d=Math.hypot(s[id][0]-s.me[0],s[id][1]-s.me[1]);if(d<best){best=d;near=id}}
-  if(tgt&&isPerson(tgt)&&s.vis[tgt]&&Math.hypot(s[tgt][0]-s.me[0],s[tgt][1]-s.me[1])<3.4)near=tgt;   /* 要找的人就在旁邊：按鈕寫他 */
+  for(const id in STORY.cast){if(id==='me'||!s.vis[id])continue;const d=dist(s[id],s.me);if(d<best){best=d;near=id}}
+  if(tgt&&isPerson(tgt)&&s.vis[tgt]&&dist(s[tgt],s.me)<3.4)near=tgt;   /* 要找的人就在旁邊：按鈕寫他 */
   if(near)return [near,`找${nameOf(near)}`];
   if(tgt&&!isPerson(tgt)){const q=standOf(tgt);if(Math.hypot(q[0]-s.me[0],q[1]-s.me[1])<1.9)return [tgt,STORY.places[tgt].name]}
   /* 要找的人或地方還在遠處：按鈕照樣在，按了就走過去（手機玩家的拇指在下面，按鈕不見了會以為卡住） */

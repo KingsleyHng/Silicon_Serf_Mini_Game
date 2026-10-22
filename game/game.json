@@ -11,7 +11,8 @@
     "check.js",
     "minis.js",
     "circuit.js",
-    "story.js"
+    "story.js",
+    "life.js"
   ],
   "css": "game.css"
 }

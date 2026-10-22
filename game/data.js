@@ -32,7 +32,7 @@ WORLD.cast = {
 
 /* Places you walk to (not people). at = where you stand to use it; mark = where the "!" floats. */
 STORY.places = {
-  mydesk: {name: 'Your desk', at: [-2.2, 3.7], mark: [-2.2, 2.4, 2.3], go: 'Go to your desk'},
+  mydesk: {name: 'Your desk', at: [-.4, 3.7], mark: [-.4, 2.4, 2.3], go: 'Go to your desk'},
   fpga: {name: 'FPGA bench', at: [6, -4.1], mark: [6, 2.3, -5.4], go: 'Go to the FPGA bench'},
   pantry: {name: 'Pantry', at: [7, -0.6], mark: [8.3, 2.4, -0.6], go: 'Go to the pantry'}
 };

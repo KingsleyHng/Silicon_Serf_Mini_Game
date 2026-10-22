@@ -74,7 +74,7 @@ STORY.beats = [
       ['kt', 'Everyone here started with one small block. Yours is the APB register block for the new timer.'],
       ['kt', "People in this industry like to joke that we're silicon serfs: we work the fields, the chip gets the glory. Don't let them scare you."],
       ['me', "I'll do my best."],
-      ['kt', 'KLN leads the RTL team and will look after you. Back of the room, middle desk.']],
+      ['kt', 'KLN leads the RTL team and will look after you. Back wall, by the stairs.']],
     after() {if (W) W.walk('kt', 'ceo')}},
   {seg: 'mon', to: 'kln', guide: 'Find KLN, your team lead',
     lines: () => [['kln', "Welcome. I'm KLN. Your block is small on purpose: three registers on APB, so the processor can set up the timer and read its status."],
@@ -96,9 +96,9 @@ STORY.beats = [
     post: () => ST.d.wait === 'skg'
       ? [['sys', 'You walk over to the verification desk.'], ['skg', "Sure, pull up a chair. This is the regression: forty-eight tests, every night, on every block. Green means nothing broke."],
         ['skg', "When it goes red on your block, I'll come and find you. Now go and read the spec, QYL is waiting."]]
-      : [['sys', 'You take a printed copy of the spec and head for the meeting room.']],
+      : [['sys', 'You take a printed copy of the spec and head upstairs to the meeting room.']],
     after() {if (W) W.screen('mine', ['account OK', 'no licence'], '#ffc94a')}},
-  {seg: 'mon', to: 'qyl', guide: 'Read the spec with QYL in the meeting room',
+  {seg: 'mon', to: 'qyl', guide: 'Read the spec with QYL in the meeting room upstairs',
     lines: () => [['qyl', "Hi, I'm QYL. I wrote the spec, so blame me for anything confusing."],
       ['qyl', 'APB is the simplest bus on the chip. The Requester starts every transfer; your block is the Completer and answers.'],
       ['qyl', 'Each transfer takes two cycles. In SETUP, PSEL is 1 and PENABLE is 0: the address is there, but you do nothing yet.'],

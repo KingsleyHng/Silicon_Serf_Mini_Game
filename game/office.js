@@ -1,14 +1,15 @@
-/* The office of KT Silicon Labs: one bright open floor in pixel style (16 pixels per metre, like the people's skins).
-   Back wall, left to right: a glass meeting room with a whiteboard, the RTL lead's desk, the verification desk, the logo on a blue wall, the FPGA lab with server racks.
-   Windows with a city skyline on the back and left walls.
-   Front left: KT's glass corner office. Front: your desk and JJY's. Right: the pantry, the front door, a sofa by the door.
+/* The office of KT Silicon Labs: a bright two-storey office in pixel style (16 pixels per metre, like the people's skins).
+   Downstairs, back wall left to right: the RTL lead's desk, the verification desk, the logo on a blue wall, the FPGA lab with server racks.
+   Front: your desk and JJY's. Right: the pantry, the front door, a sofa by the door.
+   Upstairs: a mezzanine along the left wall, 3 m up, reached by the stairs beside it: the meeting room at the back, KT's glass office at the front.
+   Under the mezzanine: the server room and the washrooms (closed). The back and left walls are two storeys high, with a band of high windows.
    Coordinates: x to the right, z toward the camera (down the screen), y up; 1 unit is about 1 metre. */
 /* Where people sit when they are not talking: their chair (at), facing their screen (face), next to the point they stand at (node).
    The engine sits them down whenever they are idle at that point, and stands them up while they speak. */
 const SEATS = {
   kln: {node: 'kln', at: [-2.5, -4.6], face: Math.PI},
   skg: {node: 'skg', at: [1.5, -4.6], face: Math.PI},
-  jjy: {node: 'jjy', at: [.85, 3.2], face: Math.PI},
+  jjy: {node: 'jjy', at: [2.65, 3.2], face: Math.PI},
   qyl: {node: 'qyl', at: [-7.45, -3.95], face: -Math.PI / 2},
   wsl: {node: 'wsl', at: [5, -4.55], face: Math.PI},
   kt: {node: 'ceo', at: [-7.3, 1.95], face: 0, drop: .14}
@@ -17,6 +18,7 @@ Object.keys(SEATS).forEach(id => {WORLD.cast[id].seat = SEATS[id]});
 
 levelAdd('office', function (K) {
   const {T, box, flat, lam, M, px, pxc, P, rnd, label, screen, tower, pickBox, G} = K;
+  const UP = 3, U = new T.Group(); U.position.y = UP; G.add(U);   // upstairs: everything in U is 3 m up, at the same x and z
   K.bounds(-9, 9, -6.2, 6);
 
   /* ── Pixel textures (16 pixels per metre; px repeats, pxc is a one-off picture) ── */
@@ -39,11 +41,12 @@ levelAdd('office', function (K) {
     accent: px(16, g => speck(g, '#1f5f8b', ['#1b5680', '#246a99'], 40)),
     rack: px(16, (g, s) => {P(g, '#1f262b', 0, 0, s, s); for (let y = 0; y < 16; y += 4) {P(g, '#2c353b', 0, y, s, 1); P(g, '#39d67a', 2, y + 2); if (rnd() > .4) P(g, '#f2b01e', 4, y + 2); for (let x = 8; x < 15; x += 2) P(g, '#151b1f', x, y + 2)}}),
     keys: px(16, (g, s) => {P(g, '#2a3035', 0, 0, s, s); for (let y = 1; y < 16; y += 3) for (let x = 1; x < 16; x += 2) P(g, '#4a535a', x, y)}),
-    steel: px(16, (g, s) => {P(g, '#c9d0d4', 0, 0, s, s); P(g, '#b7bfc4', 0, 5, s, 1); P(g, '#dde2e5', 0, 9, s, 1)})
+    steel: px(16, (g, s) => {P(g, '#c9d0d4', 0, 0, s, s); P(g, '#b7bfc4', 0, 5, s, 1); P(g, '#dde2e5', 0, 9, s, 1)}),
+    oak: px(16, (g, s) => {P(g, '#c99a62', 0, 0, s, s); [[2, 1, 9], [7, 5, 10], [12, 0, 7]].forEach(([y, x, w]) => P(g, '#b8864f', x, y, w, 1)); P(g, '#d8ad78', 3, 4, 6, 1)})
   };
   const L = (t, c) => lam(c || 0xffffff, {map: t});
   const W = {planks: L(X.planks), carpet: L(X.carpet), meet: L(X.meetCarpet), navy: L(X.navy), checker: L(X.checker), lab: L(X.labTile), leaves: L(X.leaves), pot: L(X.pot),
-    walnut: L(X.walnut), white: L(X.white), fabric: L(X.fabric), leather: L(X.leather), sofa: L(X.sofa), accent: L(X.accent), rack: L(X.rack), keys: L(X.keys), steel: L(X.steel),
+    walnut: L(X.walnut), white: L(X.white), fabric: L(X.fabric), leather: L(X.leather), sofa: L(X.sofa), accent: L(X.accent), rack: L(X.rack), keys: L(X.keys), steel: L(X.steel), oak: L(X.oak),
     grey: lam(0xaab4ba), gold: lam(0xd9ab45), frost: lam(0xffffff, {transparent: true, opacity: .5, depthWrite: false})};
 
   /* One-off pictures: the city behind the windows, the chip on the rug, the wafer, the book spines */
@@ -85,17 +88,17 @@ levelAdd('office', function (K) {
   /* ── Floor and walls ── */
   const wall = lam(0xf4f7f8, {map: K.TX.wall});
   flat(18, 12.2, W.planks, 0, 0, -.1, 1, G);
-  flat(4, 4, W.meet, -7, .006, -4.2, 1, G);                       // meeting room
-  flat(4, 5.3, W.navy, -7, .006, 3.4, 1, G);                       // KT's office
   flat(7.6, 2.8, W.carpet, -.6, .004, -4.8, 1, G);                 // the back desks
-  flat(6.8, 2.6, W.carpet, -.8, .004, 2.6, 1, G);                  // the front desks
-  flat(4.8, 2.9, W.lab, 6.6, .005, -4.75, 1, G);                   // the lab
+  flat(6.4, 2.6, W.carpet, 1.3, .004, 2.6, 1, G);                  // the front desks
+  flat(4.8, 2.9, W.lab, 6.6, .005, -4.75, 1, G);                   // the lab, with yellow tape along its edge
+  flat(4.8, .12, M.hazard, 6.6, .007, -3.36, .5, G);
   flat(2.8, 4.2, W.checker, 7.6, .006, -1.2, 1, G);                // the pantry
   pic(chipTex, 2.6, 2.6, 3.4, .007, .3, 0, -Math.PI / 2);          // a chip rug in the middle of the floor
-  box(18.4, 3.2, .3, wall, 0, 1.6, -6.35, G);
-  box(.3, 3.2, 12.4, wall, -9.15, 1.6, -.1, G);
+  /* The back and left walls go up two floors; the right wall stays low so the camera sees in */
+  box(18.4, 6.4, .3, wall, 0, 3.2, -6.35, G);
+  box(.3, 6.4, 12.4, wall, -9.15, 3.2, -.1, G);
   box(.3, 3.2, 8, wall, 9.15, 1.6, -2.1, G); box(.3, 3.2, 1.9, wall, 9.15, 1.6, 5.05, G);
-  box(18, .12, .04, W.grey, 0, .06, -6.18, G); box(.04, .12, 12, W.grey, -8.98, .06, -.1, G);   // skirting
+  box(13.4, .12, .04, W.grey, 2.3, .06, -6.18, G);                 // skirting
   /* Front door (right wall, z 2–4) and a doormat */
   box(.4, 2.6, .2, M.trim, 9.1, 1.3, 1.9, G); box(.4, 2.6, .2, M.trim, 9.1, 1.3, 4.1, G); box(.4, .3, 2.4, M.trim, 9.1, 2.65, 3, G);
   box(.08, 2.4, 2, M.glass, 9.15, 1.2, 3, G, false);
@@ -115,8 +118,9 @@ levelAdd('office', function (K) {
     for (let i = 1, n = Math.round(w / 1.2); i < n; i++) box(.04, h, .05, M.trim, -8.96, cy, z0 + w * i / n, G, false);
     box(.16, .05, w + .2, W.white, -8.92, y0 - .07, cz, G);
   };
-  windowBack(-4.7, 2.3, 1.55, 2.95); windowBack(5.9, 8.8, 1.7, 2.95);
-  windowLeft(-5.7, -2.7, 1, 2.8); windowLeft(1.2, 4.1, 1, 2.8);
+  windowBack(-3.9, 2.3, 1.55, 2.95); windowBack(5.9, 8.8, 1.7, 2.95);
+  windowBack(-4.1, 8.8, UP + .7, UP + 2.9);                        // a band of high windows over the open floor
+  windowLeft(-5.7, -2.7, UP + 1, UP + 2.8); windowLeft(-1.9, .5, UP + 1, UP + 2.8); windowLeft(1.2, 4.1, UP + 1, UP + 2.8);
 
   /* Company logo on a brand-blue wall: the logo (logo.js) on a white plaque with a trim edge */
   box(3.1, 3.2, .02, W.accent, 4.2, 1.6, -6.195, G, false);
@@ -125,10 +129,10 @@ levelAdd('office', function (K) {
   const logo = new T.Mesh(new T.PlaneGeometry(2.45, 2.45 * LOGO.h / LOGO.w), lam(0xffffff, {map: logoTex, transparent: true}));
   logo.position.set(4.2, 2.25, -6.12); G.add(logo);
 
-  /* ── Furniture ── */
+  /* ── Furniture (par is where a piece goes: G downstairs, U upstairs) ── */
   /* An office chair facing +z (turn it with ry): seat and back on a pole and a cross base, armrests; tall = a high back */
-  const chair = (x, z, ry, mat, tall) => {
-    const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry || 0; G.add(g);
+  const chair = (x, z, ry, mat, tall, par) => {
+    const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry || 0; (par || G).add(g);
     const m = mat || W.fabric;
     box(.5, .09, .5, m, 0, .48, 0, g); box(.5, tall ? .95 : .6, .09, m, 0, tall ? 1.02 : .86, -.23, g);
     box(.07, .4, .07, M.trim, 0, .26, 0, g); box(.56, .05, .07, M.trim, 0, .04, 0, g); box(.07, .05, .56, M.trim, 0, .04, 0, g);
@@ -157,32 +161,121 @@ levelAdd('office', function (K) {
     box(.08, .1, .08, W.pot, x + .75, .84, z + .22, G);
   };
   /* A potted plant: a pot and a few leaf blocks; a tall one gets a trunk */
-  const plant = (x, z, tall) => {
-    box(.45, .45, .45, W.pot, x, .225, z, G);
-    if (tall) {box(.08, .9, .08, W.walnut, x, .9, z, G); [[0, 1.45, 0, .6], [.18, 1.15, .1, .4], [-.15, 1.25, -.12, .42], [.05, 1.75, -.05, .38]].forEach(([dx, y, dz, s]) => box(s, s, s, W.leaves, x + dx, y, z + dz, G))}
-    else [[0, .62, 0, .5], [.16, .78, .1, .3], [-.14, .8, -.08, .32]].forEach(([dx, y, dz, s]) => box(s, s, s, W.leaves, x + dx, y, z + dz, G));
+  const plant = (x, z, tall, par) => {
+    const g = par || G;
+    box(.45, .45, .45, W.pot, x, .225, z, g);
+    if (tall) {box(.08, .9, .08, W.walnut, x, .9, z, g); [[0, 1.45, 0, .6], [.18, 1.15, .1, .4], [-.15, 1.25, -.12, .42], [.05, 1.75, -.05, .38]].forEach(([dx, y, dz, s]) => box(s, s, s, W.leaves, x + dx, y, z + dz, g))}
+    else [[0, .62, 0, .5], [.16, .78, .1, .3], [-.14, .8, -.08, .32]].forEach(([dx, y, dz, s]) => box(s, s, s, W.leaves, x + dx, y, z + dz, g));
   };
+  /* A glass wall 2.4 m high with a frosted band and a trim on top, from (x0, z0) to (x1, z1), straight along x or z */
+  const glassWall = (x0, z0, x1, z1, par) => {
+    const alongX = z0 === z1, L = alongX ? x1 - x0 : z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, g = par || G;
+    box(alongX ? L : .08, 2.4, alongX ? .08 : L, M.glass, cx, 1.2, cz, g, false);
+    box(alongX ? L : .14, .1, alongX ? .14 : L, M.trim, cx, 2.4, cz, g);
+    box(alongX ? L : .09, .12, alongX ? .09 : L, W.frost, cx, 1.3, cz, g, false);
+  };
+  /* A glass balustrade 0.9 m high with an oak handrail */
+  const rail = (x0, z0, x1, z1, par) => {
+    const alongX = z0 === z1, L = alongX ? x1 - x0 : z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, g = par || G;
+    box(alongX ? L : .03, .9, alongX ? .03 : L, M.glass, cx, .5, cz, g, false);
+    box(alongX ? L + .04 : .07, .06, alongX ? .07 : L + .04, W.oak, cx, .97, cz, g);
+  };
+  const post = (x, z, par) => box(.14, 2.5, .14, M.trim, x, 1.25, z, par || G);
 
-  /* Meeting room: glass on two sides with a frosted band, a whiteboard, a long table with chairs */
-  box(2.5, 2.4, .08, M.glass, -7.75, 1.2, -2.2, G, false); box(2.5, .1, .14, M.trim, -7.75, 2.4, -2.2, G); box(2.5, .12, .09, W.frost, -7.75, 1.3, -2.2, G, false);
-  box(.08, 2.4, 4, M.glass, -5, 1.2, -4.2, G, false); box(.14, .1, 4, M.trim, -5, 2.4, -4.2, G); box(.09, .12, 4, W.frost, -5, 1.3, -4.2, G, false);
-  box(.14, 2.5, .14, M.trim, -6.5, 1.25, -2.2, G); box(.14, 2.5, .14, M.trim, -5, 1.25, -2.2, G);
-  box(2.8, 1.4, .06, lam(0xffffff), -7.2, 1.6, -6.15, G); box(2.9, .08, .14, M.trim, -7.2, .88, -6.12, G);
-  screen('board', G, -7.2, 1.6, -6.1, 2.6, 1.2, ['PSEL  _/‾‾‾‾‾\\_', 'PEN   ___/‾‾\\_', 'SETUP → ACCESS'], '#1f5f8b');
-  box(.8, .06, 2.1, W.white, -8.1, .74, -3.95, G); box(.12, .7, 1.6, W.grey, -8.1, .37, -3.95, G);
-  [-4.6, -3.95, -3.3].forEach(z => chair(-7.45, z, -Math.PI / 2));
-  box(.3, .02, .4, W.steel, -7.95, .78, -3.95, G); box(.02, .26, .4, W.steel, -8.12, .9, -3.95, G, false);   // QYL's laptop
-  chair(-8.1, -2.6, Math.PI);
-  label('MEETING', -7, -2.8, 2.4, G);
+  /* ── Upstairs (x < -4.4): a mezzanine 3 m up with the meeting room at the back and KT's office at the front ── */
+  box(4.6, .3, 12.2, W.white, -6.7, UP - .15, -.1, G);                // the floor slab and its trim
+  box(.05, .32, 12.2, M.trim, -4.38, UP - .15, -.1, G); box(4.6, .32, .05, M.trim, -6.7, UP - .15, 6.02, G);
+  flat(4.6, 12.2, W.planks, -6.7, .002, -.1, 1, U);
+  flat(4.6, 4, W.meet, -6.7, .006, -4.2, 1, U);                      // meeting room
+  flat(4.6, 5.2, W.navy, -6.7, .006, 3.4, 1, U);                     // KT's office
+  box(4.6, .12, .04, W.grey, -6.7, .06, -6.18, U); box(.04, .12, 12, W.grey, -8.98, .06, -.1, U);   // skirting
+  rail(-9, 5.98, -4.4, 5.98, U);                                     // the open front
+  rail(-4.42, -2.2, -4.42, -1.6, U); rail(-4.42, .4, -4.42, .8, U);  // beside the top of the stairs
 
-  /* Desks along the back wall: the RTL lead, then verification (with the regression light) */
+  /* Downstairs, under the mezzanine: the server room (racks behind a window) and the washrooms, closed off */
+  box(.2, UP - .3, 12.2, wall, -4.5, (UP - .3) / 2, -.1, G);
+  box(4.6, UP - .3, .2, wall, -6.7, (UP - .3) / 2, 5.95, G);
+  box(.05, 1.5, 2.8, M.trim, -4.38, 1.45, -3.6, G); box(.02, 1.36, 2.66, W.rack, -4.36, 1.45, -3.6, G, false); box(.02, 1.36, 2.66, M.glass, -4.34, 1.45, -3.6, G, false);
+  box(.06, 2.1, .9, W.walnut, -4.37, 1.05, -5.55, G); box(.03, .05, .2, W.gold, -4.33, 1.05, -5.25, G);
+  screen('srv', G, -4.36, 2.55, -3.6, .53, .3, ['SERVER', 'ROOM'], '#93a9b2').rotation.y = Math.PI / 2;
+  [-8.2, -7].forEach(x => {box(.9, 2.1, .06, W.walnut, x, 1.05, 6.06, G); box(.04, .2, .03, W.gold, x + .32, 1.05, 6.1, G);
+    box(.34, .34, .03, W.accent, x, 2.4, 6.08, G); box(.06, .2, .02, W.white, x, 2.4, 6.1, G); box(.1, .1, .02, W.white, x, 2.53, 6.1, G)});   // washroom signs
+  box(1.3, 2.3, .08, W.leaves, -5.3, 1.3, 6.08, G);                  // a green wall of moss
+  /* A printer in the corner behind the stairs */
+  box(.6, .75, .55, W.white, -3.85, .375, -2.6, G); box(.5, .12, .42, M.dark, -3.85, .81, -2.6, G); box(.34, .02, .24, lam(0xffffff), -3.85, .88, -2.62, G);
+
+  /* The stairs: 15 steps of 20 cm up from the front (z 4.8) to a landing at the back, against the mezzanine; oak treads, a glass balustrade */
+  const SX0 = -4.4, SX1 = -2.6, SW = SX1 - SX0, SCX = (SX0 + SX1) / 2, Z0 = 4.8, Z1 = .4, N = 15, RUN = (Z0 - Z1) / N, RISE = UP / N;
+  for (let i = 0; i < N; i++) {
+    const top = (i + 1) * RISE, z = Z0 - (i + .5) * RUN;
+    box(SW, top - .05, RUN, wall, SCX, (top - .05) / 2, z, G);
+    box(SW + .04, .05, RUN + .02, W.oak, SCX, top - .025, z, G);
+    if (i % 4 === 0 || i === N - 1) box(.05, .95, .05, M.trim, SX1 - .04, top + .47, z, G);
+  }
+  const ang = Math.atan2(UP, Z0 - Z1), len = Math.hypot(UP, Z0 - Z1);
+  [[.03, .85, M.glass, .5], [.07, .06, W.oak, .97]].forEach(([w, h, m, dy]) => {const o = box(w, h, len, m, SX1 - .04, UP / 2 + dy, (Z0 + Z1) / 2, G, false); o.rotation.x = ang});
+  box(SW, UP, 2, wall, SCX, UP / 2, -.6, G);                          // the landing, with a store-room door on its side
+  flat(SW, 2, W.planks, SCX, .003, -.6, 1, U);
+  box(.06, 2, .9, W.walnut, SX1 + .03, 1, -.6, G); box(.03, .05, .2, W.gold, SX1 + .07, 1, -.9, G);
+  rail(SX1 - .04, -1.6, SX1 - .04, .4, U); rail(SX0, -1.58, SX1, -1.58, U);
+  label('2F', SCX, -.9, 1.4, U);
+  plant(-2.2, 5.55, false);
+
+  /* Meeting room upstairs: glass on two sides with a door, a whiteboard, a long table with chairs */
+  glassWall(-9, -2.2, -6.5, -2.2, U); glassWall(-5, -2.2, -4.4, -2.2, U); glassWall(-4.4, -6.2, -4.4, -2.2, U);
+  box(1.5, .1, .14, M.trim, -5.75, 2.4, -2.2, U); [-6.5, -5, -4.4].forEach(x => post(x, -2.2, U));
+  box(2.8, 1.4, .06, lam(0xffffff), -7.2, 1.6, -6.15, U); box(2.9, .08, .14, M.trim, -7.2, .88, -6.12, U);
+  screen('board', U, -7.2, 1.6, -6.1, 2.6, 1.2, ['PSEL  _/‾‾‾‾‾\\_', 'PEN   ___/‾‾\\_', 'SETUP → ACCESS'], '#1f5f8b');
+  box(.8, .06, 2.1, W.white, -8.1, .74, -3.95, U); box(.12, .7, 1.6, W.grey, -8.1, .37, -3.95, U);
+  [-4.6, -3.95, -3.3].forEach(z => chair(-7.45, z, -Math.PI / 2, null, false, U));
+  /* QYL's laptop: the base toward QYL, the lid on the far side with its screen facing QYL */
+  box(.3, .02, .4, W.steel, -7.95, .78, -3.95, U); box(.02, .26, .4, W.steel, -8.12, .9, -3.95, U, false);
+  screen('qylpc', U, -8.105, .9, -3.95, .36, .2, ['spec v2.1', 'APB timing'], '#7fe3c8').rotation.y = Math.PI / 2;
+  chair(-8.1, -2.6, Math.PI, null, false, U);
+  plant(-4.9, -5.75, true, U);
+  label('MEETING', -6.7, -2.8, 2.4, U);
+
+  /* The landing upstairs: a sofa under the window, a water cooler */
+  box(.7, .42, 1.6, W.sofa, -8.6, .21, -.7, U); box(.22, .55, 1.6, W.sofa, -8.9, .62, -.7, U);
+  [-1.45, .05].forEach(z => box(.7, .3, .15, W.sofa, -8.6, .55, z, U));
+  box(.32, .9, .32, W.white, -8.6, .45, .45, U); box(.24, .34, .24, lam(0x9ecbe0, {transparent: true, opacity: .75}), -8.6, 1.07, .45, U);
+  plant(-4.95, .5, false, U);
+
+  /* KT's office upstairs: glass walls with a door, navy carpet, a window, a walnut desk with a proper computer, a leather chair,
+     two chairs for visitors, a bookshelf and a silicon wafer on a stand */
+  glassWall(-9, .8, -6.5, .8, U); glassWall(-5, .8, -4.4, .8, U); glassWall(-4.4, .8, -4.4, 6, U);
+  box(1.5, .1, .14, M.trim, -5.75, 2.4, .8, U); [-6.5, -5, -4.4].forEach(x => post(x, .8, U)); post(-4.4, 6, U);
+  box(1.9, .07, .95, W.walnut, -7.3, .78, 3.05, U); box(1.8, .72, .08, W.walnut, -7.3, .37, 3.48, U); [-1, 1].forEach(s => box(.08, .72, .85, W.walnut, -7.3 + s * .86, .37, 3.05, U));
+  /* KT sits on the -z side facing +z: the monitor stands at the far edge with its screen toward KT, the keyboard and mouse in front of it */
+  box(.32, .02, .2, M.trim, -7.3, .825, 3.3, U); box(.06, .3, .05, M.trim, -7.3, .97, 3.33, U);
+  box(.98, .58, .04, M.dark, -7.3, 1.2, 3.3, U);
+  screen('ktpc', U, -7.3, 1.2, 3.277, .9, .5, ['Q3 roadmap', 'tape-out in 6 wk'], '#ffd36a').rotation.y = Math.PI;
+  box(.5, .02, .16, W.keys, -7.3, .825, 2.82, U); box(.06, .02, .1, M.dark, -6.9, .825, 2.84, U);
+  /* A laptop on the left, open toward KT: the base flat, the lid tilted back from the hinge at the far edge */
+  box(.4, .02, .27, W.steel, -8, .825, 2.95, U);
+  {const lid = new T.Group(); lid.position.set(-8, .835, 3.08); lid.rotation.x = .25; U.add(lid);
+    box(.4, .27, .015, W.steel, 0, .135, 0, lid);
+    screen('ktlap', lid, 0, .135, -.009, .36, .22, ['mail', '12 unread'], '#93a9b2').rotation.y = Math.PI}
+  box(.09, .1, .09, W.pot, -6.62, .865, 2.75, U);                    // coffee
+  box(.12, .16, .12, W.gold, -6.55, .9, 3.25, U);                    // an award
+  box(.44, .12, .06, W.walnut, -6.62, .87, 3.46, U);                 // the name plate faces visitors
+  screen('ceoplate', U, -6.62, .88, 3.495, .4, .1, ['KT · CEO'], '#e8c66a');
+  chair(-7.3, 1.95, 0, W.leather, true, U);
+  chair(-7.85, 4.05, Math.PI, null, false, U); chair(-6.75, 4.05, Math.PI, null, false, U);
+  box(.4, 2, 1.6, W.walnut, -8.8, 1, 5.1, U); pic(booksTex, 1.45, 1.85, -8.59, 1 + UP, 5.1, Math.PI / 2);
+  box(.3, 1, .3, W.white, -5.5, .5, 5.45, U); box(.06, .3, .06, M.trim, -5.5, 1.15, 5.45, U);
+  const wafer = new T.Mesh(new T.CylinderGeometry(.3, .3, .02, 32), [lam(0xb8c2cc), lam(0xffffff, {map: waferTex, alphaTest: .5}), lam(0xb8c2cc)]);
+  wafer.rotation.x = Math.PI / 2; wafer.position.set(-5.5, 1.55, 5.46); U.add(wafer);
+  plant(-8.55, 1.25, true, U);
+
+  /* ── Downstairs: desks along the back wall: the RTL lead, then verification (with the regression light) ── */
   workstation(-2.2, -5.4, 'kln', ['review queue', '3 open'], '#7fe3c8', 'kln2', ['git log', 'a3f9 irq fix'], '#7fe3c8');
   chair(-2.5, -4.6, Math.PI);
   workstation(1.8, -5.4, 'skg', ['regression', 'idle'], '#93a9b2', 'skg2', ['tb_apb.sv', 'assert ok'], '#7fe3c8');
   chair(1.5, -4.6, Math.PI);
   tower('reg', G, 2.65, 1.05, -5.75);
   label('RTL', -.2, -3.3, 1.6, G);
-  plant(-4.4, -5.75, true); plant(3.25, -5.8);
+  plant(-3.85, -5.75, true); plant(3.25, -5.8);
 
   /* FPGA lab: a workbench, a green board with LEDs, a monitor, a scope, a bench power supply, WSL's chair; two server racks against the right wall */
   box(3, .9, 1, W.steel, 6, .45, -5.4, G); box(3.1, .06, 1.1, lam(0xd9dde0), 6, .93, -5.4, G);
@@ -196,12 +289,12 @@ levelAdd('office', function (K) {
   label('LAB', 6, -3.5, 1.6, G);
 
   /* Your desk, front left, and JJY's next to it: synthesis and timing */
-  workstation(-2.2, 2.4, 'mine', ['login:', '_'], '#93a9b2', 'mine2', ['spec.pdf', 'APB v2'], '#93a9b2');
-  chair(-2.55, 3.2, Math.PI);
-  pickBox('mydesk', 2.2, 2, 1.4, -2.2, 1, 2.5, G);
-  workstation(1.2, 2.4, 'jjy', ['timing', 'WNS +0.12'], '#7fe3c8', 'jjy2', ['report_timing', 'max paths'], '#7fe3c8');
-  chair(.85, 3.2, Math.PI);
-  plant(-4.4, 5.55, true); plant(3.1, 5.6);
+  workstation(-.4, 2.4, 'mine', ['login:', '_'], '#93a9b2', 'mine2', ['spec.pdf', 'APB v2'], '#93a9b2');
+  chair(-.75, 3.2, Math.PI);
+  pickBox('mydesk', 2.2, 2, 1.4, -.4, 1, 2.5, G);
+  workstation(3, 2.4, 'jjy', ['timing', 'WNS +0.12'], '#7fe3c8', 'jjy2', ['report_timing', 'max paths'], '#7fe3c8');
+  chair(2.65, 3.2, Math.PI);
+  plant(4.6, 5.55, true);
 
   /* Pantry against the right wall: counter with cabinets above, coffee machine, microwave, fridge, a high table with stools */
   const counter = lam(0x8a6a4a, {map: K.TX.wood});
@@ -222,39 +315,31 @@ levelAdd('office', function (K) {
   [4.4, 5.9].forEach(z => box(.7, .3, .15, W.sofa, 8.6, .55, z, G));
   box(.8, .06, .5, W.white, 7.45, .4, 5.2, G); box(.7, .37, .4, W.grey, 7.45, .185, 5.2, G); box(.3, .03, .22, lam(0x3b86bd), 7.35, .44, 5.2, G);
 
-  /* KT's corner office: glass walls with a frosted band, a door at the back corner, navy carpet, a window, a walnut desk, a leather chair,
-     two chairs for visitors, a bookshelf and a silicon wafer on a stand */
-  box(4, 2.4, .08, M.glass, -7, 1.2, .8, G, false); box(4, .1, .14, M.trim, -7, 2.4, .8, G); box(4, .12, .09, W.frost, -7, 1.3, .8, G, false);
-  box(.08, 2.4, 3.6, M.glass, -5, 1.2, 4.2, G, false); box(.14, .1, 5.2, M.trim, -5, 2.4, 3.4, G); box(.09, .12, 3.6, W.frost, -5, 1.3, 4.2, G, false);
-  [.8, 2.4, 6].forEach(z => box(.14, 2.5, .14, M.trim, -5, 1.25, z, G));
-  box(1.9, .07, .95, W.walnut, -7.3, .78, 3.05, G); box(1.8, .72, .08, W.walnut, -7.3, .37, 3.48, G); [-1, 1].forEach(s => box(.08, .72, .85, W.walnut, -7.3 + s * .86, .37, 3.05, G));
-  box(.5, .02, .35, W.steel, -7.6, .83, 2.95, G); box(.5, .32, .02, W.steel, -7.6, .99, 2.78, G, false);
-  screen('ceoplate', G, -6.75, .9, 3.4, .42, .14, ['KT · CEO'], '#e8c66a');
-  box(.12, .16, .12, W.gold, -6.6, .9, 2.8, G);
-  chair(-7.3, 1.95, 0, W.leather, true);
-  chair(-7.85, 4.05, Math.PI); chair(-6.75, 4.05, Math.PI);
-  box(.4, 2, 1.6, W.walnut, -8.8, 1, 5.1, G); pic(booksTex, 1.45, 1.85, -8.59, 1, 5.1, Math.PI / 2);
-  box(.3, 1, .3, W.white, -5.5, .5, 5.45, G); box(.06, .3, .06, M.trim, -5.5, 1.15, 5.45, G);
-  const wafer = new T.Mesh(new T.CylinderGeometry(.3, .3, .02, 32), [lam(0xb8c2cc), lam(0xffffff, {map: waferTex, alphaTest: .5}), lam(0xb8c2cc)]);
-  wafer.rotation.x = Math.PI / 2; wafer.position.set(-5.5, 1.55, 5.46); G.add(wafer);
-  plant(-8.55, 1.25, true);
-
-  /* Where things block walking: [x0, x1, z0, z1] */
+  /* How high the floor is: upstairs, the landing, the slope of the stairs, downstairs */
+  K.ground((x, z) => x < SX0 ? UP : x > SX1 ? 0 : z >= -1.6 && z <= Z1 ? UP : z > Z1 && z < Z0 ? UP * (Z0 - z) / (Z0 - Z1) : 0);
+  /* Where things block walking: [x0, x1, z0, z1]. The edge of the mezzanine and the sides of the stairs keep the two floors apart */
   K.block([
-    [-9, -6.5, -2.3, -2.1], [-5.1, -4.9, -6.2, -2.1], [-8.5, -7.7, -5, -2.9],
+    [-4.45, -4.4, -6.2, -1.6], [-4.45, -4.4, .4, 6], [SX0, SX1, -1.7, -1.6], [SX1, SX1 + .05, -1.7, Z0], [-9, -4.4, 5.85, 6],
+    [-9, -6.5, -2.3, -2.1], [-5, -4.4, -2.3, -2.1], [-8.5, -7.7, -5, -2.9], [-5.15, -4.65, -6, -5.5],
+    [-9, -8.25, -1.55, .15], [-8.8, -8.4, .25, .65], [-5.2, -4.7, .25, .75],
+    [-9, -6.5, .76, .84], [-5, -4.4, .76, .84], [-8.25, -6.35, 2.6, 3.5], [-8.1, -6.5, 3.8, 4.3], [-9, -8.6, 4.3, 5.9], [-5.65, -5.35, 5.3, 5.6], [-8.8, -8.3, 1, 1.5],
+    [-4.2, -3.5, -2.9, -2.3], [-4.1, -3.6, -6, -5.5], [3, 3.5, -6, -5.55],
     [-3.2, -1.2, -5.85, -4.95], [.8, 2.8, -5.85, -4.95], [4.5, 7.5, -6.2, -4.9], [8.1, 9, -6.2, -3.9],
-    [-3.2, -1.2, 1.95, 2.85], [.2, 2.2, 1.95, 2.85], [8, 9, -3.1, .7], [5.75, 6.45, -2.65, -1.95],
-    [8.3, 9, 4.35, 5.95], [7.05, 7.85, 4.95, 5.45],
-    [-9, -5, .76, .84], [-5.05, -4.95, 2.4, 6], [-8.25, -6.35, 2.6, 3.5], [-8.1, -6.5, 3.8, 4.3], [-9, -8.6, 4.3, 5.9], [-5.65, -5.35, 5.3, 5.6],
-    [-4.65, -4.15, -6, -5.5], [3, 3.5, -6, -5.55], [-4.65, -4.15, 5.3, 5.8], [2.85, 3.35, 5.35, 5.85], [8.3, 8.8, 1.05, 1.55], [-8.8, -8.3, 1, 1.5]
+    [-1.4, .6, 1.95, 2.85], [2, 4, 1.95, 2.85], [8, 9, -3.1, .7], [5.75, 6.45, -2.65, -1.95],
+    [8.3, 9, 4.35, 5.95], [7.05, 7.85, 4.95, 5.45], [-2.45, -1.95, 5.3, 5.8], [4.35, 4.85, 5.3, 5.8], [8.3, 8.8, 1.05, 1.55]
   ]);
-  /* Where people stand, and how they can walk between those points */
+  /* Where people stand, and how they can walk between those points (in straight lines, so each line must be clear).
+     Points ending in V are where a visitor stands to chat with that person; pantry, pantry2 and cooler are where people take a break. */
   K.nodes({
-    outside: [10.4, 3], door: [8.3, 3], lobby: [7.4, 3.6], start: [6.2, 3.2], center: [3.6, .4], aisle: [-.2, -3],
-    kln: [-1.35, -4.25], skg: [2.6, -4.25], lab: [5.2, -4], wsl: [4.3, -3.95], meet: [-5.75, -1.4], qyl: [-6.8, -3.9], front: [-.3, 4.2], mine: [-2.2, 3.8], jjy: [2.05, 3.55],
-    pantry: [7, -.6], pantry2: [6.8, .5], west: [-4.2, .2], ceodoor: [-4.3, 1.8], ceoin: [-5.7, 1.8], ceo: [-6.3, 1.65]
-  }, 'outside-door door-lobby lobby-start door-start start-center center-aisle aisle-kln aisle-skg center-lab lab-wsl center-wsl aisle-meet meet-qyl start-front front-mine front-jjy center-pantry center-pantry2 pantry-pantry2 center-west west-ceodoor ceodoor-ceoin ceoin-ceo');
+    outside: [10.4, 3], door: [8.3, 3], lobby: [7.4, 3.6], start: [6.2, 3.2], center: [3.6, .4], aisle: [-.2, -3], mid: [-2, -.6],
+    kln: [-1.35, -4.25], skg: [2.6, -4.25], lab: [5.2, -4], wsl: [4.3, -3.95], front: [1.3, 4.4], mine: [-.4, 3.8], jjy: [3.85, 3.55],
+    pantry: [7, -.6], pantry2: [6.8, .5], frontL: [-2, 5.3], stBot: [-3.5, 5.4],
+    stTop: [-3.5, -.6], up2: [-5.75, -.6], meet: [-5.75, -1.6], qyl: [-6.8, -3.9], ceodoor: [-5.75, .2], ceo: [-6.3, 1.65], cooler: [-7.9, .3],
+    klnV: [-3.4, -3.8], skgV: [.4, -3.7], jjyV: [1.5, 3.8], wslV: [5.9, -3.6], qylV: [-6.4, -3.1], ktV: [-5.7, 2.6]
+  }, 'outside-door door-lobby lobby-start door-start start-center center-aisle aisle-kln aisle-skg center-lab lab-wsl center-wsl start-front front-mine front-jjy ' +
+    'center-pantry center-pantry2 pantry-pantry2 aisle-mid mid-frontL front-frontL frontL-stBot stBot-stTop stTop-up2 up2-meet meet-qyl up2-ceodoor ceodoor-ceo up2-cooler ' +
+    'aisle-klnV aisle-skgV front-jjyV lab-wslV meet-qylV ceodoor-ktV');
   /* Home-screen camera shots */
-  WORLD.shots = [{p: [-2, 1.2, -4.4], d: 14, yaw: .3, pitch: .6}, {p: [3, 1, 0], d: 18, yaw: -.3, pitch: .7}, {p: [-6.5, 1, 3], d: 11, yaw: .45, pitch: .7}];
+  WORLD.shots = [{p: [-2, 1.2, -4.4], d: 14, yaw: .3, pitch: .6}, {p: [2, 1.5, 0], d: 20, yaw: -.3, pitch: .7}, {p: [-6.5, UP + 1, 3], d: 11, yaw: .45, pitch: .7}];
 });
 WORLD.level = 'office';

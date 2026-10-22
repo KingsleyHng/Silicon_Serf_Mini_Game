@@ -11,7 +11,7 @@
      WORLD.items[kind]=(g,K)=>{…}   撿得到的東西長什麼樣子（沒有登記的只有一顆閃光）
    關卡檔 build(K) 用 K 蓋場景（見下面 LVK），並登記：
      K.bounds(x0,x1,z0,z1) 可以走的範圍；K.block([[x0,x1,z0,z1],…]) 擋路的長方形（外圍多 .3）；
-     K.nodes({名字:[x,z],…}, 'a-b b-c') 人站的點與連線；K.anchor(id,[x,y,z]) 狀態牌可以掛的地方；K.onTheme(f) 換亮暗時呼叫 f(dark)。
+     K.nodes({名字:[x,z],…}, 'a-b b-c') 人站的點與連線；K.ground((x,z)=>y) 地板在 (x,z) 有多高（樓上、樓梯；沒設定就是 0，高低不同的地方之間要用 K.block 隔開）；K.anchor(id,[x,y,z]) 狀態牌可以掛的地方；K.onTheme(f) 換亮暗時呼叫 f(dark)。
    座標：x 往右、z 往鏡頭（畫面下方），y 往上；1 單位大約 1 公尺。 */
 const WORLD={cast:{},level:'main',shots:[],items:{}};
 function initWorld(){
@@ -107,7 +107,7 @@ function initWorld(){
   function plate(text,fill,ink){return sprite(512,128,(g)=>{g.setTransform(2*CK,0,0,2*CK,0,0);pill(g,256,64,fill);g.fillStyle=ink;let fs=30;g.font='700 '+fs+'px '+FONT;while(g.measureText(text).width>218&&fs>16){fs-=2;g.font='700 '+fs+'px '+FONT}g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,34)},1.9,.475)}
 
   /* ── 走路：人物走的點與連線（關卡登記），自由走動用格子尋路 ── */
-  const NODES={},ADJ={},ANCH={};
+  const NODES={},ADJ={},ANCH={};let groundAt=()=>0;
   function route(a,b){if(a===b)return[];const prev={},q=[a];prev[a]=null;while(q.length){const n=q.shift();if(n===b)break;(ADJ[n]||[]).forEach(m=>{if(!(m in prev)){prev[m]=n;q.push(m)}})}const out=[];let n=b;while(n&&n!==a){out.unshift(n);n=prev[n]}return out}
   const CS=.5;let GX=-20,GZ=-10,NC=80,NR=40,grid=new Uint8Array(NC*NR);
   function bounds(x0,x1,z0,z1){GX=x0;GZ=z0;NC=Math.ceil((x1-x0)/CS);NR=Math.ceil((z1-z0)/CS);grid=new Uint8Array(NC*NR)}
@@ -137,7 +137,7 @@ function initWorld(){
   /* ── 借給關卡檔的工具（levels.js 有說明）── */
   const LVK={T,M,TX,px,pxc,P,rnd,lam,basic,box,flat,canvasTex,FONT,MONO,pal:()=>pal,plate,sprite,pickBox,desk,
     label:(t,x,z,w,G)=>floorLabel(t,x,z,w,G),screen:(id,G,x,y,z,w,h,lines,color)=>makeScreen(id,G,x,y,z,w,h,lines,color),tower:(id,G,x,y,z)=>makeTower(id,G,x,y,z),
-    bounds,block,nodes,anchor:(id,p)=>{ANCH[id]=new T.Vector3(p[0],p[1],p[2])},onTheme:f=>themeHooks.push(f)};
+    bounds,block,nodes,ground:f=>{groundAt=f},anchor:(id,p)=>{ANCH[id]=new T.Vector3(p[0],p[1],p[2])},onTheme:f=>themeHooks.push(f)};
   const lvG={},lvBuilt={};
   function needLv(id,cb){if(lvBuilt[id]){cb&&cb(true);return}levelReady(id,ok=>{if(!ok||lvBuilt[id]){cb&&cb(!!lvBuilt[id]);return}lvBuilt[id]=1;const G=lvG[id]=new T.Group();scene.add(G);LEVELS[id](Object.assign({},LVK,{G}));themeHooks.forEach(f=>f(theme()==='dark'));cb&&cb(true)})}
   needLv(WORLD.level);
@@ -176,13 +176,14 @@ function initWorld(){
     const node=o.node&&NODES[o.node]?o.node:Object.keys(NODES)[0];
     const ch={id,g,legL,legR,armL,armR,head,seat:o.seat||null,sitK:0,up:false,path:[],node,home:node,face:o.face||0,speed:o.speed||(id==='me'?5:5.6),phase:Math.random()*6,hop:0,cb:null};
     place(ch,node);return ch}
-  function place(ch,node){const n=NODES[node]||[0,0];ch.g.position.set(n[0],0,n[1]);ch.node=node;ch.path=[];ch.cb=null;ch.g.rotation.y=ch.face;ch.target=ch.face}
+  function place(ch,node){const n=NODES[node]||[0,0];ch.g.position.set(n[0],0,n[1]);ch.node=node;ch.path=[];ch.cb=null;ch.sitK=0;ch.g.rotation.y=ch.face;ch.target=ch.face}   /* sitK 歸零：不然坐著的人被搬走後，坐下的動畫又把他拉回椅子 */
   const chars={},HIDDEN0=[];
   if(!WORLD.cast.me)WORLD.cast.me={label:'You',fill:'#f2b01e',ink:'#231800'};
   for(const id in WORLD.cast){chars[id]=makeChar(id,WORLD.cast[id]);if(WORLD.cast[id].hidden){HIDDEN0.push(id);chars[id].g.visible=false}}
   function walk(id,node,cb){const ch=chars[id];if(!ch||!NODES[node]){cb&&cb();return}const r=route(ch.node,node);ch.node=node;ch.path=r.map(n=>new T.Vector3(NODES[n][0],0,NODES[n][1]));ch.cb=cb||null;if(!ch.path.length&&cb){ch.cb=null;cb()}}
   const v1=new T.Vector3();
   function face(a,b){const A=chars[a],B=chars[b];if(!A||!B||A.path.length)return;v1.copy(B.g.position).sub(A.g.position);A.target=Math.atan2(v1.x,v1.z)}
+  function look(id,x,z){const A=chars[id];if(!A||A.path.length)return;A.target=Math.atan2(x-A.g.position.x,z-A.g.position.z)}
   function updChar(ch,dt){
     const p=ch.g.position;let moving=!!ch.keyMove;
     if(ch.path.length){moving=true;const t=ch.path[0];v1.copy(t).sub(p);v1.y=0;const L=v1.length(),s=ch.speed*dt;
@@ -196,7 +197,7 @@ function initWorld(){
       ch.gest=(ch.gest===undefined?4+Math.random()*8:ch.gest)-dt;if(ch.gest<0){const k=-ch.gest/1.4;if(k>=1)ch.gest=6+Math.random()*9;else{const u=Math.sin(k*Math.PI);ch.armR.rotation.x=-1.15*u;ch.head.rotation.x=.22*u}}else ch.head.rotation.x=0}
     else{ch.head.rotation.x=0}
     ch.head.rotation.y=(moving||reduceMotion)?0:Math.sin(ch.phase*.5)*.12;
-    if(ch.hop>0){ch.hop=Math.max(0,ch.hop-dt*2.2);p.y=Math.sin(ch.hop*Math.PI)*.4}else p.y=0;
+    const gy=groundAt(p.x,p.z);if(ch.hop>0){ch.hop=Math.max(0,ch.hop-dt*2.2);p.y=gy+Math.sin(ch.hop*Math.PI)*.4}else p.y=gy;
     /* 有座位的人：停在座位旁的點、沒被叫起來時，慢慢坐下（sitK 0→1）：移到椅子上、腿往前伸、手放到鍵盤上打字、頭微低看螢幕 */
     const st=ch.seat;
     if(st){
@@ -204,7 +205,7 @@ function initWorld(){
       ch.sitK=moving?0:ch.sitK+(want-ch.sitK)*Math.min(1,dt*7);
       const k=ch.sitK,n=NODES[st.node];
       if(k>.002&&n){
-        p.x=n[0]+(st.at[0]-n[0])*k;p.z=n[1]+(st.at[1]-n[1])*k;p.y=-(st.drop||.1)*k;
+        p.x=n[0]+(st.at[0]-n[0])*k;p.z=n[1]+(st.at[1]-n[1])*k;p.y=groundAt(p.x,p.z)-(st.drop||.1)*k;
         if(want){ch.target=st.face;ch.gest=6}
         const tp=reduceMotion?0:Math.sin(ch.phase*7)*.07,mix=(a,b)=>a+(b-a)*k;
         ch.legL.rotation.x=ch.legR.rotation.x=mix(ch.legL.rotation.x,-Math.PI/2);
@@ -239,7 +240,7 @@ function initWorld(){
   const sideMk=[0,1].map(i=>{const g=new T.Group(),s=sprite(96,128,badge('#e9f3ff','#1f55b5','?'),.7,.93);g.add(s);
     const p=new T.Mesh(new T.BoxGeometry(1.3,1.3,1.3),M.hidden);p.userData.pick='side'+i;g.add(p);pickables.push(p);g.visible=false;scene.add(g);return {g,ch:null,y:0}});
   function marker(at){mkCh=null;if(!at){mk.visible=false;return}mk.visible=true;mk.position.set(at[0],at[1],at[2]);mkY=at[1]}
-  function markOn(id){const c=chars[id];if(!c){marker(null);return}mkCh=c;mk.visible=true;mkY=3.35;mk.position.set(c.g.position.x,mkY,c.g.position.z)}
+  function markOn(id){const c=chars[id];if(!c){marker(null);return}mkCh=c;mk.visible=true;mkY=3.35;mk.position.set(c.g.position.x,mkY+groundAt(c.g.position.x,c.g.position.z),c.g.position.z)}
 
   /* ── 撿得到的東西：一顆會閃的光，加上遊戲登記的樣子 ── */
   const ITM={};
@@ -298,9 +299,11 @@ function initWorld(){
   const ray=new T.Raycaster(),nd=new T.Vector2();
   function hits(e){const r=canvas.getBoundingClientRect();nd.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(nd,camera);
     const ids=[];ray.intersectObjects(pickables,true).forEach(h=>{const id=h.object.userData.pick;if(id&&ids.indexOf(id)<0&&!(chars[id]&&!chars[id].g.visible)&&h.object.parent.visible!==false)ids.push(id)});return ids}
+  /* 點到的地板：沿著視線往前找第一個碰到的地板（有樓上、樓梯的時候不只 y=0 一層）；找不到就用 y=0 */
+  function floorHit(){const o=ray.ray.origin,d=ray.ray.direction;if(d.y<0)for(let t=0;t<200;t+=.1){const x=o.x+d.x*t,y=o.y+d.y*t,z=o.z+d.z*t;if(y<=groundAt(x,z)){v5.set(x,y,z);return true}}return !!ray.ray.intersectPlane(floorPlane,v5)}
   function up(e){const had=ptr.has(e.pointerId);ptr.delete(e.pointerId);if(!had)return;
     if(!dragged&&e.type==='pointerup'){const ids=hits(e),done=ids.length&&api.onPick?api.onPick(ids):false;
-      if(!done&&freeOn&&(!api.canMove||api.canMove())&&ray.ray.intersectPlane(floorPlane,v5))walkXZ('me',v5.x,v5.z)}
+      if(!done&&freeOn&&(!api.canMove||api.canMove())&&floorHit())walkXZ('me',v5.x,v5.z)}
     if(ptr.size<2)pinch=0}
   canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
   /* 滾輪：看滾動量（觸控板一次滑動送幾十個事件）。Ctrl/Cmd＋滾輪（含觸控板捏合）留給瀏覽器縮放 */
@@ -328,7 +331,7 @@ function initWorld(){
     {const ts=cam.wide?1:Math.max(1,Math.min(1.5,dCur/15));for(const id in chars){const t=chars[id].g.userData.tag;t.scale.set(1.9*ts,.475*ts,1);t.position.y=2.4+(ts-1)*.3}tagG.scale.setScalar(ts)}
     for(let i=tweens.length-1;i>=0;i--)if(tweens[i](dt))tweens.splice(i,1);
     const me=chars.me.g.position;
-    const sh=homeOn?SHOTS[hShot]:null;if(sh){hT+=dt;v3.set(sh.p[0],sh.p[1],sh.p[2])}else if(focus){if(focus.obj)focus.pos.copy(focus.obj.position);v3.copy(focus.pos)}else v3.set(me.x,1,me.z);tgt.lerp(v3,1-Math.pow(sh?.1:.002,dt));
+    const sh=homeOn?SHOTS[hShot]:null;if(sh){hT+=dt;v3.set(sh.p[0],sh.p[1],sh.p[2])}else if(focus){if(focus.obj)focus.pos.copy(focus.obj.position);v3.copy(focus.pos)}else v3.set(me.x,groundAt(me.x,me.z)+1,me.z);tgt.lerp(v3,1-Math.pow(sh?.1:.002,dt));
     const hk=reduceMotion?.5:Math.min(1,hT/8);
     const dWant=sh?sh.d*(cam.wide?1:1.22)*(1.06-.1*hk):focus?focus.dist:(cam.base||24)*zoom;dCur+=(dWant-dCur)*(1-Math.pow(sh?.12:.01,dt));
     if(sh){const k=1-Math.pow(.12,dt);hYaw+=(sh.yaw+(hk-.5)*.24-hYaw)*k;hPitch+=(sh.pitch-hPitch)*k}
@@ -339,10 +342,10 @@ function initWorld(){
      sv5.set(tgt.x+SLR.x*da+SLU.x*db,tgt.y+SLR.y*da+SLU.y*db,tgt.z+SLR.z*da+SLU.z*db);sun.target.position.copy(sv5);sun.position.set(sv5.x+8,sv5.y+17,sv5.z+10)}
     {const k=reduceMotion?1:1-Math.pow(.04,dt);hemi.intensity+=(pal.hemi*mood.h-hemi.intensity)*k;sun.intensity+=(pal.sun*mood.s-sun.intensity)*k;sun.color.lerp(mood.c,k);hemi.color.lerp(mood.hc,k);bgC.setHex(pal.bg).lerp(mood.bc,mood.bg);scene.background.lerp(bgC,k);scene.fog.color.copy(scene.background)}
     for(const k in ITM){const it=ITM[k];if(!it.g.visible)continue;const t=time*3+it.ph,u=Math.max(0,Math.sin(t)),s=reduceMotion?.8:.6+.34*u;it.s.material.opacity=reduceMotion?.85:.5+.5*u;it.s.scale.set(s,s,1);it.s.material.rotation=reduceMotion?0:t*.35}
-    sideMk.forEach((m,i)=>{if(!m.g.visible)return;if(m.ch){m.g.position.x=m.ch.g.position.x;m.g.position.z=m.ch.g.position.z}m.g.position.y=m.y+(reduceMotion?0:Math.sin(time*2.6+i*2)*.1)});
-    if(mk.visible){if(mkCh){mk.position.x=mkCh.g.position.x;mk.position.z=mkCh.g.position.z}mk.position.y=mkY+(reduceMotion?0:Math.sin(time*4)*.16);const k=reduceMotion?1:1+Math.max(0,Math.sin(time*4))*.12;gem.scale.set(.84*k,1.12*k,1)}
+    sideMk.forEach((m,i)=>{if(!m.g.visible)return;let y0=0;if(m.ch){m.g.position.x=m.ch.g.position.x;m.g.position.z=m.ch.g.position.z;y0=groundAt(m.g.position.x,m.g.position.z)}m.g.position.y=y0+m.y+(reduceMotion?0:Math.sin(time*2.6+i*2)*.1)});
+    if(mk.visible){let y0=0;if(mkCh){mk.position.x=mkCh.g.position.x;mk.position.z=mkCh.g.position.z;y0=groundAt(mk.position.x,mk.position.z)}mk.position.y=y0+mkY+(reduceMotion?0:Math.sin(time*4)*.16);const k=reduceMotion?1:1+Math.max(0,Math.sin(time*4))*.12;gem.scale.set(.84*k,1.12*k,1)}
     if(alarmId&&towers[alarmId]){const on=reduceMotion||Math.sin(time*7)>0,t=towers[alarmId];t.lamps[0].m.color.setHex(on?0xff5a4a:0x5a2a26);t.halo.material.opacity=on?.95:.2}
-    if(tagG.visible){if(chars[tagAt]){const c_=chars[tagAt].g.position;v4.set(c_.x,3.0,c_.z)}else if(ANCH[tagAt])v4.copy(ANCH[tagAt]);tagG.position.lerp(v4,1-Math.pow(.02,dt))}
+    if(tagG.visible){if(chars[tagAt]){const c_=chars[tagAt].g.position;v4.set(c_.x,3.0+groundAt(c_.x,c_.z),c_.z)}else if(ANCH[tagAt])v4.copy(ANCH[tagAt]);tagG.position.lerp(v4,1-Math.pow(.02,dt))}
     if(NODRAW){scene.updateMatrixWorld();camera.updateMatrixWorld()}   /* 不畫，但位置照更新：點東西、W.project 要用 */
     else if(!Q.skip())renderer.render(scene,camera);
   }
@@ -351,7 +354,7 @@ function initWorld(){
   renderer.setAnimationLoop(tick);
 
   const api={
-    onPick:null,canMove:null,layout,walk,face,marker,markOn,walkXZ,
+    onPick:null,canMove:null,layout,walk,face,look,marker,markOn,walkXZ,
     mood(n){mood=MOODS[n]||MOODS.day},
     /* 撿得到的東西：L 是現在看得到的 [[id,樣子,x,y,z],…]，其他的藏起來 */
     items(L){const want={};(L||[]).forEach(o=>{let it=ITM[o[0]];if(!it)it=ITM[o[0]]=mkItem(o[0],o[1],o.slice(2));it.g.visible=true;want[o[0]]=1});for(const k in ITM)if(!want[k])ITM[k].g.visible=false},
@@ -364,8 +367,8 @@ function initWorld(){
     going(){return !!(chars.me&&chars.me.cb)},
     /* 還在走的人，開口時直接到位 */
     arrive(id){const c=chars[id];if(c&&c.path.length){const f=c.cb;place(c,c.node);if(f)f()}},
-    /* 這個人最後會停在哪裡（還在走的話是他要去的地方） */
-    dest(id){const c=chars[id];if(!c)return null;if(c.path.length){const t=c.path[c.path.length-1];return [t.x,t.z]}return [c.g.position.x,c.g.position.z]},
+    /* 這個人最後會停在哪裡（還在走的話是他要去的地方）：[x,z,地板高度] */
+    dest(id){const c=chars[id];if(!c)return null;if(c.path.length){const t=c.path[c.path.length-1];return [t.x,t.z,groundAt(t.x,t.z)]}return [c.g.position.x,c.g.position.z,groundAt(c.g.position.x,c.g.position.z)]},
     /* 結算圖卡用的截圖 */
     grab(){try{const pr=renderer.getPixelRatio(),k=Math.min(3,Math.max(pr,1080/(canvas.clientWidth||innerWidth)));renderer.setPixelRatio(k);renderer.render(scene,camera);const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;c.getContext('2d').drawImage(canvas,0,0);renderer.setPixelRatio(pr);renderer.render(scene,camera);return c}catch(e){return null}},
     sideMark(i,at){const m=sideMk[i];if(!m)return;if(!at){m.g.visible=false;m.ch=null;return}m.g.visible=true;if(typeof at==='string'){m.ch=chars[at];if(!m.ch){m.g.visible=false;return}m.y=3.3;m.g.position.set(m.ch.g.position.x,m.y,m.ch.g.position.z)}else{m.ch=null;m.y=at[1];m.g.position.set(at[0],at[1],at[2])}},
@@ -376,7 +379,7 @@ function initWorld(){
     alarm(id){const old=alarmId;alarmId=id||null;if(old&&old!==alarmId&&towers[old])setTower(old,towers[old].state);if(alarmId)setTower(alarmId,'red')},
     show(id,on){if(chars[id])chars[id].g.visible=!!on},
     up(id,on){if(id==null){for(const k in chars)chars[k].up=false;return}if(chars[id])chars[id].up=!!on},   /* 叫有座位的人站起來（講話時）；W.up(null) 全部可以坐回去 */
-    put(id,node){const ch=chars[id],p=NODES[node];if(!ch||!p)return;ch.path=[];ch.cb=null;ch.node=node;ch.home=node;ch.g.position.set(p[0],0,p[1])},
+    put(id,node){const ch=chars[id],p=NODES[node];if(!ch||!p)return;ch.path=[];ch.cb=null;ch.node=node;ch.home=node;ch.sitK=0;ch.g.position.set(p[0],0,p[1])},
     screen(id,lines,color){const s=screens[id];if(!s)return;s.st.lines=lines;if(color)s.st.color=color;s.redraw()},
     focus(at,dist){focus=at?{pos:new T.Vector3(at[0],at[1],at[2]),dist:dist||11}:null},
     focusObj(obj,dist){focus={obj,pos:obj.position.clone(),dist:dist||14}},
@@ -399,7 +402,8 @@ function initWorld(){
         if(o.screens)for(const k in o.screens)api.screen(k,o.screens[k].lines,o.screens[k].color);
         if(o.tag)api.tag(o.tag.text,o.tag.at,o.tag.fill);if('mk' in o)marker(o.mk)}
     },
-    snap(){const o={vis:{},mk:mk.visible?[mk.position.x,mk.position.z]:null};for(const id in chars){o[id]=[chars[id].g.position.x,chars[id].g.position.z];o.vis[id]=chars[id].g.visible}return o},
+    /* 每個人的 [x,z,地板高度]，vis 看不看得到，mk「！」在哪 */
+    snap(){const o={vis:{},mk:mk.visible?[mk.position.x,mk.position.z]:null};for(const id in chars){const p=chars[id].g.position;o[id]=[p.x,p.z,groundAt(p.x,p.z)];o.vis[id]=chars[id].g.visible}return o},
     reset(){for(const id in chars){place(chars[id],chars[id].home);chars[id].g.visible=HIDDEN0.indexOf(id)<0}tweens.length=0;freeOn=false;focus=null;
       api.alarm(null);for(const k in towers)setTower(k,'green');marker(null);sideMk.forEach(m=>{m.g.visible=false;m.ch=null});mood=MOODS.day;api.items(null);api.speed('me',1);api.tag('')}
   };

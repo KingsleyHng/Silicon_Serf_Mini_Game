@@ -37,9 +37,9 @@ function tickPtr(){
   let on=false;const t=W&&MOVE.can()?MOVE.target():null;
   if(t){
     const s=W.snap(),dx=t[0]-s.me[0],dz=t[1]-s.me[1],L=Math.hypot(dx,dz);
-    const p=W.project(t[0],2.4,t[1]),w=innerWidth,h=innerHeight,m=30,top=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hud-h'))||56)+70,bot=h-m;
+    const p=W.project(t[0],2.4+(t[2]||0),t[1]),w=innerWidth,h=innerHeight,m=30,top=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hud-h'))||56)+70,bot=h-m;
     if(L>3&&(p[2]>1||p[0]<m||p[0]>w-m||p[1]<top||p[1]>bot)){
-      const a=W.project(s.me[0],1,s.me[1]),q=W.project(s.me[0]+dx/L*2,1,s.me[1]+dz/L*2),U=Math.hypot(q[0]-a[0],q[1]-a[1])||1,vx=(q[0]-a[0])/U,vy=(q[1]-a[1])/U;
+      const y=1+(s.me[2]||0),a=W.project(s.me[0],y,s.me[1]),q=W.project(s.me[0]+dx/L*2,y,s.me[1]+dz/L*2),U=Math.hypot(q[0]-a[0],q[1]-a[1])||1,vx=(q[0]-a[0])/U,vy=(q[1]-a[1])/U;
       let k=1e9;if(vx>0)k=Math.min(k,(w-m-a[0])/vx);else if(vx<0)k=Math.min(k,(m-a[0])/vx);if(vy>0)k=Math.min(k,(bot-a[1])/vy);else if(vy<0)k=Math.min(k,(top-a[1])/vy);
       k=Math.max(70,k);
       ptr.style.transform='translate('+Math.round(a[0]+vx*k-19)+'px,'+Math.round(a[1]+vy*k-19)+'px) rotate('+Math.atan2(vy,vx).toFixed(3)+'rad)';on=true;
@@ -53,7 +53,7 @@ const bub=$('#bub');let bubCh=null,bubEnd=0;
 function bubTick(){
   if(!bubCh)return;
   if(!W||!MOVE.can()||performance.now()>bubEnd){bub.hidden=true;bubCh=null;return}
-  const p=W.snap()[bubCh],q=W.project(p[0],2.95,p[1]);
+  const p=W.snap()[bubCh],q=W.project(p[0],2.95+(p[2]||0),p[1]);
   bub.style.transform='translate('+Math.round(q[0])+'px,'+Math.round(q[1])+'px) translate(-50%,-100%)';
   requestAnimationFrame(bubTick);
 }

@@ -76,6 +76,7 @@ levelAdd('cafe', function (K) {
   K.block([[x0, x1, z0, z1], …]);                  // where people cannot walk (adds a 0.3 margin)
   K.nodes({bar: [-1, -4.2], …}, 'bar-mach mach-grind');   // standing points and how they connect
   K.pickBox('machine', w, h, d, x, y, z, K.G);     // tappable area with an id
+  K.ground((x, z) => x < -5 ? 3 : 0);             // optional: floor height (an upper floor, stairs); block off where heights jump
 });
 WORLD.level = 'cafe';
 ```
