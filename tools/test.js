@@ -111,7 +111,12 @@ async function play(br, o) {
       if (ch.length) { await ch[o.last ? ch.length - 1 : 0].click(); log.push('choice'); continue }
       await click('#dlgNext'); continue;
     }
-    if (await vis('#gGo')) { const c = await pg.evaluate(() => window.__t.cur()); log.push('go:' + (c && c.to)); await click('#gGo'); await pg.waitForFunction(() => document.getElementById('guide').hidden || !document.getElementById('dlg').hidden, null, { timeout: 8000 }).catch(() => {}); continue }   /* 走到了才會開口 */
+    if (await vis('#gGo')) { const c = await pg.evaluate(() => window.__t.cur()); log.push('go:' + (c && c.to)); await click('#gGo'); await pg.waitForFunction(() => document.getElementById('guide').hidden || !document.getElementById('dlg').hidden, null, { timeout: 8000 }).catch(() => {});
+      /* 開口的時候人要真的在旁邊（走不到的話「帶我去」也會直接開口，看不出來） */
+      const far = c && c.to && await pg.evaluate(id => { const T = window.__t, s = T.snap(); if (!s || document.getElementById('dlg').hidden) return 0; const p = T.STORY.places[id], q = p ? p.at : s[id];
+        return q ? Math.hypot(q[0] - s.me[0], q[1] - s.me[1], (q[2] || 0) - (s.me[2] || 0)) : 0 }, c.to);
+      if (far > 3.6) { errors.push('could not walk to ' + c.to + ' (still ' + far.toFixed(1) + ' m away)'); break }
+      continue }   /* 走到了才會開口 */
     await pg.waitForTimeout(150);
   }
   let card = false;

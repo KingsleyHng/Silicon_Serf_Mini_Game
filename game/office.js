@@ -49,18 +49,76 @@ levelAdd('office', function (K) {
     walnut: L(X.walnut), white: L(X.white), fabric: L(X.fabric), leather: L(X.leather), sofa: L(X.sofa), accent: L(X.accent), rack: L(X.rack), keys: L(X.keys), steel: L(X.steel), oak: L(X.oak),
     grey: lam(0xaab4ba), gold: lam(0xd9ab45), frost: lam(0xffffff, {transparent: true, opacity: .5, depthWrite: false})};
 
-  /* One-off pictures: the city behind the windows, the chip on the rug, the wafer, the book spines */
-  const skyTex = pxc(64, 32, g => {
-    ['#c4e6f8', '#cdeaf9', '#d6eefa', '#dff2fb', '#e8f6fc', '#eff9fd'].forEach((c, i) => P(g, c, 0, i * 4, 64, 4)); P(g, '#f4fbfe', 0, 24, 64, 8);
-    [[6, 5, 8], [38, 8, 10], [52, 3, 6]].forEach(([x, y, w]) => {P(g, '#ffffff', x, y, w, 2); P(g, '#ffffff', x + 2, y - 1, w - 4, 1)});
-    for (let x = 0; x < 64;) {
-      const w = 4 + (rnd() * 6 | 0), h = 8 + (rnd() * 14 | 0), c = ['#a9bccb', '#9bb0c1', '#b7c8d4', '#8fa6b8'][rnd() * 4 | 0];
-      P(g, c, x, 32 - h, w, h);
-      for (let y = 34 - h; y < 31; y += 2) for (let xx = x + 1; xx < x + w - 1; xx += 2) if (rnd() > .35) P(g, '#eaf5fb', xx, y);
-      x += w + (rnd() * 2 | 0);
-    }
-  });
-  skyTex.wrapS = T.RepeatWrapping;
+  /* The view outside: one picture shared by every window, 16 pixels per metre and mapped by where each window is, so the windows
+     downstairs look out at the hedge, the tree trunks and the lower floors across the park, and the high ones at the treetops, the roofs and the sky.
+     Columns 0–296 are what the back wall looks out on (x from -9.25 to 9.25), columns 296–494 what the left wall looks out on (z from 6.1 to -6.3);
+     row 0 is 7 m up, the bottom row is the ground. Clouds drift and leaves fall from the trees about twelve times a second
+     (a still picture for people who ask for reduced motion). */
+  const VW = 512, VH = 112, PPM = 16, BACK = 296, REG = [[0, BACK], [BACK, 198]];
+  const can = (w, h) => {const c = document.createElement('canvas'); c.width = w; c.height = h; return c};
+  const skyC = can(VW, VH), fgC = can(VW, VH), viewC = can(VW, VH), trees = [];
+  {const g = skyC.getContext('2d'); ['#9fd2f1', '#a9d7f3', '#b4dcf4', '#bfe1f6', '#cae6f7', '#d4eaf8', '#ddeef9'].forEach((c, i) => P(g, c, 0, i * 12, VW, 12)); P(g, '#e4f2fa', 0, 84, VW, 28)}
+  {const g = fgC.getContext('2d');
+    REG.forEach(([x0, w]) => {
+      /* The city across the park: blocks of flats and offices with rows of windows, a few lit */
+      for (let x = x0; x < x0 + w;) {
+        const bw = Math.min(14 + (rnd() * 26 | 0), x0 + w - x), top = 34 + (rnd() * 32 | 0), c = ['#a9bccb', '#9bb0c1', '#b7c8d4', '#8fa6b8', '#c3d0d9'][rnd() * 5 | 0];
+        P(g, c, x, top, bw, VH - top); P(g, '#7f97a9', x, top, bw, 1);
+        for (let y = top + 3; y < VH - 4; y += 4) for (let xx = x + 2; xx < x + bw - 2; xx += 3) if (rnd() > .3) P(g, rnd() > .85 ? '#fff6d8' : '#e4f1f8', xx, y, 2, 2);
+        x += bw + (rnd() * 4 | 0);
+      }
+      /* Grass, and a hedge along the street */
+      P(g, '#7fb069', x0, 92, w, 20); for (let i = 0; i < w * 3; i++) P(g, ['#6fa35a', '#8dbd74', '#77aa60'][rnd() * 3 | 0], x0 + rnd() * w | 0, 92 + rnd() * 20 | 0);
+      P(g, '#3f7a35', x0, 80, w, 12); for (let i = 0; i < w * 4; i++) P(g, ['#2f6b25', '#4f9b3c', '#386f2c', '#5aa544'][rnd() * 4 | 0], x0 + rnd() * w | 0, 79 + rnd() * 13 | 0);
+      /* Trees in the park: a trunk and a round crown, darker on the shaded side */
+      for (let x = x0 + 14 + (rnd() * 10 | 0); x < x0 + w - 10; x += 52 + (rnd() * 22 | 0)) {
+        const R = 15 + (rnd() * 6 | 0), cy = 44 + (rnd() * 8 | 0);
+        P(g, '#6e472b', x - 1, cy, 4, VH - cy); P(g, '#5b3a22', x + 2, cy, 1, VH - cy);
+        for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+          const d = Math.hypot(dx, dy * 1.1) + rnd() * 2.2;
+          if (d < R) P(g, d > R - 3 && dx + dy > 0 ? '#2f6b25' : ['#4f9b3c', '#3e8530', '#62b04a', '#78c25a', '#4a8f38'][rnd() * 5 | 0], x + dx, cy + dy);
+        }
+        trees.push({x, cy, R, x0, w});
+      }
+    });
+  }
+  const clouds = [], leaves = [];
+  REG.forEach(([x0, w]) => {for (let i = 0; i < 4; i++) clouds.push({x0, w, x: rnd() * w, y: 14 + (rnd() * 22 | 0), s: 8 + (rnd() * 12 | 0), v: .1 + rnd() * .12})});
+  /* A leaf starts somewhere in a crown (after a short wait), sways as it falls and lands on the hedge or the grass */
+  const leaf = l => {const t = trees[Math.random() * trees.length | 0];
+    return Object.assign(l, {t, x: t.x + (Math.random() * 2 - 1) * t.R * .8, y: t.cy + Math.random() * t.R * .6, v: .25 + Math.random() * .3, ph: Math.random() * 6,
+      land: 86 + Math.random() * 22, c: ['#e8a030', '#e07a2b', '#d4b43a', '#c9583a', '#f0c848'][Math.random() * 5 | 0], wait: Math.random() * 40 | 0})};
+  for (let i = 0; i < 30; i++) leaves.push(leaf({}));
+  const viewTex = new T.CanvasTexture(viewC);
+  viewTex.magFilter = viewTex.minFilter = T.NearestFilter; viewTex.generateMipmaps = false; viewTex.encoding = T.sRGBEncoding;
+  const drawView = () => {
+    const g = viewC.getContext('2d'); g.drawImage(skyC, 0, 0);
+    clouds.forEach(c => {
+      c.x += c.v; if (c.x > c.w) c.x = -2 * c.s;
+      const x = c.x0 + Math.round(c.x), y = c.y, s = c.s;
+      g.save(); g.beginPath(); g.rect(c.x0, 0, c.w, VH); g.clip();
+      P(g, '#ffffff', x, y, s * 2, 3); P(g, '#ffffff', x + 3, y - 2, s * 2 - 7, 2); P(g, '#ffffff', x + (s >> 1), y - 4, s, 2); P(g, '#e1edf5', x + 2, y + 3, s * 2 - 4, 1);
+      g.restore();
+    });
+    g.drawImage(fgC, 0, 0);
+    leaves.forEach(l => {
+      if (l.wait > 0) {l.wait--; return}
+      l.ph += .15; l.y += l.v; l.x += Math.sin(l.ph) * .35 + .05;
+      if (l.y > l.land) {leaf(l); return}
+      const x = Math.round(l.x); if (x >= l.t.x0 && x < l.t.x0 + l.t.w) P(g, l.c, x, Math.round(l.y), 2, Math.sin(l.ph) > 0 ? 2 : 1);   // a leaf turning over as it falls
+    });
+    viewTex.needsUpdate = true;
+  };
+  drawView();
+  if (!reduceMotion) setInterval(() => {if (!document.hidden) drawView()}, 80);
+  /* One pane of the view: w×h at (x, y, z) turned by ry, showing canvas columns u0..u1 at the window's own height */
+  const viewMat = lam(0xffffff, {map: viewTex, emissive: 0xffffff, emissiveMap: viewTex, emissiveIntensity: .45});
+  const pane = (w, h, x, y, z, ry, u0, u1) => {
+    const geo = new T.PlaneGeometry(w, h), uv = geo.attributes.uv, v0 = (y - h / 2) * PPM / VH, v1 = (y + h / 2) * PPM / VH;
+    [[u0, v1], [u1, v1], [u0, v0], [u1, v0]].forEach(([u, v], i) => uv.setXY(i, u / VW, v));
+    const m = new T.Mesh(geo, viewMat); m.position.set(x, y, z); m.rotation.y = ry; G.add(m);
+  };
+  /* Other one-off pictures: the chip on the rug, the wafer, the book spines */
   const chipTex = pxc(32, 32, g => {
     P(g, '#e3e9ec', 0, 0, 32, 32); P(g, '#c7d0d5', 0, 0, 32, 1); P(g, '#c7d0d5', 0, 31, 32, 1); P(g, '#c7d0d5', 0, 0, 1, 32); P(g, '#c7d0d5', 31, 0, 1, 32);
     for (let i = 8; i < 25; i += 2) {P(g, '#c9a24a', i, 3, 1, 4); P(g, '#c9a24a', i, 25, 1, 4); P(g, '#c9a24a', 3, i, 4, 1); P(g, '#c9a24a', 25, i, 4, 1)}
@@ -104,17 +162,16 @@ levelAdd('office', function (K) {
   box(.08, 2.4, 2, M.glass, 9.15, 1.2, 3, G, false);
   flat(1, 1.6, lam(0x3b4248), 8.4, .008, 3, 1, G); flat(.8, 1.4, W.accent, 8.4, .01, 3, 1, G);
 
-  /* Windows: a dark frame, the skyline (lit a little from inside so it reads as daylight), mullions every metre or so, a white sill */
-  const sky = {emissive: 0xffffff, emissiveMap: skyTex, emissiveIntensity: .45};
+  /* Windows: a dark frame, the view (lit a little from inside so it reads as daylight), mullions every metre or so, a white sill */
   const windowBack = (x0, x1, y0, y1) => {
     const w = x1 - x0, h = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    box(w + .14, h + .14, .03, M.trim, cx, cy, -6.19, G, false); pic(skyTex, w, h, cx, cy, -6.17, 0, 0, {rep: w / h / 2, mat: sky});
+    box(w + .14, h + .14, .03, M.trim, cx, cy, -6.19, G, false); pane(w, h, cx, cy, -6.17, 0, (x0 + 9.25) * PPM, (x1 + 9.25) * PPM);
     for (let i = 1, n = Math.round(w / 1.2); i < n; i++) box(.05, h, .04, M.trim, x0 + w * i / n, cy, -6.16, G, false);
     box(w + .2, .05, .16, W.white, cx, y0 - .07, -6.12, G);
   };
   const windowLeft = (z0, z1, y0, y1) => {
     const w = z1 - z0, h = y1 - y0, cz = (z0 + z1) / 2, cy = (y0 + y1) / 2;
-    box(.03, h + .14, w + .14, M.trim, -8.99, cy, cz, G, false); pic(skyTex, w, h, -8.97, cy, cz, Math.PI / 2, 0, {rep: w / h / 2, mat: sky});
+    box(.03, h + .14, w + .14, M.trim, -8.99, cy, cz, G, false); pane(w, h, -8.97, cy, cz, Math.PI / 2, BACK + (6.1 - z1) * PPM, BACK + (6.1 - z0) * PPM);
     for (let i = 1, n = Math.round(w / 1.2); i < n; i++) box(.04, h, .05, M.trim, -8.96, cy, z0 + w * i / n, G, false);
     box(.16, .05, w + .2, W.white, -8.92, y0 - .07, cz, G);
   };
@@ -219,7 +276,6 @@ levelAdd('office', function (K) {
   box(.06, 2, .9, W.walnut, SX1 + .03, 1, -.6, G); box(.03, .05, .2, W.gold, SX1 + .07, 1, -.9, G);
   rail(SX1 - .04, -1.6, SX1 - .04, .4, U); rail(SX0, -1.58, SX1, -1.58, U);
   label('2F', SCX, -.9, 1.4, U);
-  plant(-2.2, 5.55, false);
 
   /* Meeting room upstairs: glass on two sides with a door, a whiteboard, a long table with chairs */
   glassWall(-9, -2.2, -6.5, -2.2, U); glassWall(-5, -2.2, -4.4, -2.2, U); glassWall(-4.4, -6.2, -4.4, -2.2, U);
@@ -326,7 +382,7 @@ levelAdd('office', function (K) {
     [-4.2, -3.5, -2.9, -2.3], [-4.1, -3.6, -6, -5.5], [3, 3.5, -6, -5.55],
     [-3.2, -1.2, -5.85, -4.95], [.8, 2.8, -5.85, -4.95], [4.5, 7.5, -6.2, -4.9], [8.1, 9, -6.2, -3.9],
     [-1.4, .6, 1.95, 2.85], [2, 4, 1.95, 2.85], [8, 9, -3.1, .7], [5.75, 6.45, -2.65, -1.95],
-    [8.3, 9, 4.35, 5.95], [7.05, 7.85, 4.95, 5.45], [-2.45, -1.95, 5.3, 5.8], [4.35, 4.85, 5.3, 5.8], [8.3, 8.8, 1.05, 1.55]
+    [8.3, 9, 4.35, 5.95], [7.05, 7.85, 4.95, 5.45], [4.35, 4.85, 5.3, 5.8], [8.3, 8.8, 1.05, 1.55]
   ]);
   /* Where people stand, and how they can walk between those points (in straight lines, so each line must be clear).
      Points ending in V are where a visitor stands to chat with that person; pantry, pantry2 and cooler are where people take a break. */
